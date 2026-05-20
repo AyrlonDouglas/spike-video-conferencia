@@ -21,6 +21,7 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 
 - ~20 consultas/dia, ~60 min, sempre 2 participantes (1:1), N em paralelo
 - Paciente mobile-first; profissional e backoffice desktop + responsivo
+- Familiaridade do time: **Node.js/NestJS**, **Angular**, **React Native** (§0.6 SPIKE)
 - Budget: proposta paramétrica → validação stakeholders
 - Realtime do ecossistema (GetStream): **apenas chat no Dr Clin** — vídeo usa **SDKs diferentes** e exige módulos novos no backend e frontend (não é habilitar feature); **Api.Saúde não utiliza chat**
 - **Chat (Dr Clin):** concebido para chat+vídeo; entregue só chat no **Dr Clin** — **Api.Saúde não utiliza chat**; modalidade acoplada ao produto; refatoração **só se** vídeo for adicionado ao Dr Clin (§0.1 SPIKE)

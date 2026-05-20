@@ -18,6 +18,7 @@ Respostas coletadas que orientam a spike. Atualizar conforme novos dados.
 | Atendimentos em paralelo? | Sim, N em paralelo | Isolamento por sessão; concorrência modesta em escala absoluta |
 | Budget aceitável? | Proposta primeiro → validação com stakeholders | Entregável financeiro é **proposta paramétrica**, não teto pré-definido |
 | Plataformas? | Paciente: **mobile-first**; profissional e backoffice: **desktop + responsivo** | Clientes heterogêneos; C3 (reconexão) crítico no mobile |
+| Familiaridade do time (stack) | **Backend:** Node.js / NestJS · **Web:** Angular · **Mobile:** React Native | Pesquisa de provider e implementação H2 devem considerar suporte SDK/exemplos nessas stacks — ver §0.6 |
 | Realtime do ecossistema cobre vídeo? | **Não — apenas chat** (GetStream no **Dr Clin**) | H3 não acelera escolha de stack de vídeo; Api.Saúde não usa chat; reutilização limitada a práticas transversais |
 | Chat: desenho original vs hoje | **Planejado para chat + vídeo**; entregue **só chat** no **Dr Clin**; customizações **acoplaram a modalidade de chat** ao produto — **Api.Saúde não utiliza chat** | Refatoração **só** se vídeo for adicionado ao Dr Clin; videoconsulta Api.Saúde = H2 separada — ver §0.1 |
 | GetStream vídeo = habilitar função no chat? | **Não** — SDKs distintos; exige **módulo de vídeo novo** no backend e no frontend | Esforço de integração comparable a qualquer provider; ver §0.1 |
@@ -98,6 +99,32 @@ Com o tempo, **alterações incrementais** introduziram regras e dependências *
 - Decisões de ciclo de sessão, desencontro, reconexão e orquestração (H2)
 
 Ou seja: escolher GetStream Video na fase de provider **não encurta** a spike arquitetural — a capability desacoplada (H2) continua necessária independentemente do vendor.
+
+### Familiaridade do time (stack)
+
+Contexto levantado para orientar **pesquisa de provider**, **PoC** e **implementação H2** ([SPIKE-H2.md](./SPIKE-H2.md)). Não fixa stack da Api.Saúde rebootada como consumidor — integração consumidor ↔ capability permanece via contrato (M2M).
+
+| Camada | Stack com familiaridade do time | Superfície na videoconsulta |
+|--------|----------------------------------|---------------------------|
+| **Backend / API** | **Node.js**, **NestJS** | Capability H2, adapters de provider, webhooks, orquestração de sessão |
+| **Web** | **Angular** | Profissional de saúde; backoffice (desktop + responsivo) |
+| **Mobile** | **React Native** | Paciente (mobile-first); reconexão C3 crítica |
+
+**Critérios derivados para a pesquisa:**
+
+| Critério | Peso (1–3) | O que avaliar |
+|----------|------------|---------------|
+| SDK / REST server-side em **Node.js** | **3** | Adapter na capability; exemplos oficiais; qualidade de tipos e webhooks |
+| SDK **web** compatível com **Angular** | **3** | Join, estado, reconexão no browser desktop |
+| SDK **mobile** compatível com **React Native** | **3** | Join, reconexão C3, permissões câmera/microfone |
+| Exemplos e documentação nas stacks acima | 2 | Curva de aprendizado; time-to-PoC |
+| Necessidade de stack adicional (ex.: .NET, Swift/Kotlin nativo) | 2 | Penaliza — aumenta risco e prazo |
+
+**Implicações:**
+
+- Capability H2 **provavelmente** em **NestJS** — alinhada à familiaridade do time; **não** exige que Api.Saúde rebootada use a mesma stack.
+- Clientes: **Angular** (web profissional/backoffice) + **React Native** (paciente) — biblioteca compartilhada ou módulos por superfície; ver [SPIKE-H2 §3.5](./SPIKE-H2.md#35-integração-com-clientes-3-superfícies).
+- Na **comparativa de providers** (fase pós-spike): descartar ou penalizar opções sem SDK/caminho viável para Node + Angular + React Native, salvo ganho decisivo em outra dimensão (custo, anti-desencontro, operação).
 
 ### Reboot da Api.Saúde
 
@@ -389,7 +416,8 @@ Custo_mensal ≈ N_dia × 30 × (
 | Critério | Importância (1–3) | Notas |
 |----------|-------------------|-------|
 | Troca de provider de mídia sem reescrever regras de consulta | | |
-| Clientes heterogêneos (web, app, futuros produtos) | **3** | Paciente mobile-first; profissional/backoffice desktop+responsivo — SDK/contrato deve funcionar em ambos |
+| Clientes heterogêneos (web, app, futuros produtos) | **3** | Paciente mobile-first (React Native); profissional/backoffice desktop+responsivo (Angular) — SDK/contrato deve funcionar em ambos |
+| Aderência à stack do time (§0.6) | **2** | Node/NestJS backend; Angular web; React Native mobile — reduz risco na pesquisa e no PoC |
 | Extensões futuras (transcrição, 3º participante) | **1** | Fora do MVP; gravação também **fora de escopo** (§0.4) |
 | Onde aceitamos lock-in (mídia vs sinalização vs estado) | | |
 
@@ -551,6 +579,8 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 
 Somente **após** cumprir [§11 — Definition of Done](#11-definition-of-done--encerramento-da-spike-arquitetural). Não antecipar provider.
 
+**Restrição de pesquisa (§0.6):** comparar providers com suporte viável a **Node.js/NestJS** (backend), **Angular** (web) e **React Native** (mobile). Documentar gaps por vendor antes de escolher.
+
 ### Dentro do PoC (nova capability H2)
 
 | Prova | Relacionado a | Prioridade |
@@ -561,6 +591,7 @@ Somente **após** cumprir [§11 — Definition of Done](#11-definition-of-done--
 | Sessão órfã / timeout C2 | Cleanup + custo | Média |
 | Carga simultânea (pico) | Escala + custo | Média |
 | Paridade funcional mínima vs Go Rooms (C1–C4) | Migração | Média |
+| Integração nas stacks do time (NestJS + Angular + React Native) | §0.6; time-to-MVP | **Alta** |
 
 ### Fora do PoC
 
@@ -664,3 +695,4 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 | 2026-05-20 | | Diagrama de estados (§7) validado |
 | 2026-05-20 | | §0.1 corrigido: refatoração do chat condicional (só se vídeo for adicionado ao Dr Clin) |
 | 2026-05-20 | | §0.1: produto de chat identificado como **Dr Clin** |
+| 2026-05-20 | | §0.6: familiaridade do time — Node/NestJS, Angular, React Native; critérios para pesquisa de provider |
