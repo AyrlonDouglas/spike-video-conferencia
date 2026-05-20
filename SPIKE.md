@@ -131,7 +131,7 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 |---|----------|----------|-----------|--------|
 | 1 | A capability de vídeo deve viver **acoplada à Api.Saúde** (H1) ou como **serviço/capability compartilhada** (H2)? | **H2 — capability desacoplada**, integrada ao **reboot** da Api.Saúde como consumidor. H1/legado **rejeitados** (§0, §0.2) | Decisão de time + reboot | 🟢 Decidido |
 | 2 | Quem é a **fonte da verdade** do estado da sessão (criada, lobby, ativa, encerrada, vetada)? | **Capability de vídeo (H2)** — orquestra estados e transições. Api.Saúde = negócio da consulta (comandos). Provider = fatos de mídia (webhooks). Clientes **nunca** são fonte da verdade (§3.2.1) | Desencontro + H2 + 3 clientes | 🟢 Decidido |
-| 3 | Reconexão (C3) é **mesma sessão técnica** ou **nova sessão com continuidade de negócio**? | _Pendente — prioridade alta (mobile + desencontros pós-reconexão)_ | Plataformas (§0) + desencontro | 🔴 Aberto |
+| 3 | Reconexão (C3) é **mesma sessão técnica** ou **nova sessão com continuidade de negócio**? | **Modelo híbrido (§3.2.2):** mesma sessão de **negócio** na capability; **preferir** mesma room do provider; mídia **sempre** revalidada via `mídia_pendente`. Nova room só como fallback | Desencontro + mobile | 🟢 Decidido |
 | 4 | O que são os **“desencontros”** hoje (sintoma, causa provável, impacto)? | **Sintoma:** médico e paciente na chamada, mas não se veem/ouvem. **Impacto:** consulta inviável. **Causa:** a confirmar no PoC (§0) | Produto / suporte | 🟡 Parcial — sintoma definido |
 | 5 | Quanto de **prática operacional do ecossistema** (H3) se aplica a vídeo 1:1? | **Limitado:** chat GetStream não transfere integração de vídeo — SDKs distintos, módulos backend/frontend novos (§0.1). Reuso: familiaridade com vendor + práticas transversais (auth, observabilidade) | Confirmação engenharia | 🟢 Decidido |
 | 6 | Qual **modelo de custo** escala de forma sustentável com o volume esperado? | Baseline parametrizado (§3.5); **aceitabilidade** depende de proposta + validação stakeholders | §0, §3.5 | 🟡 Parcial |
@@ -159,7 +159,7 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 |---------|---------------------|------------------|--------------------------|------------------------|----------------------------|
 | **C1** | Médico e paciente em consulta ~60 min | Duração média **~60 min** confirmada; ambos podem encerrar? | | | Duração validada (§0) |
 | **C2** | Um lado não entra | Timeout de espera; quem encerra; sessão órfã | | | |
-| **C3** | Reconexão após queda | Mesma sessão vs nova; grace period; UX | | | |
+| **C3** | Reconexão após queda | Modelo híbrido §3.2.2; grace period **adiado** | | | Arquitetura definida |
 | **C4** | Médico encerra e veta paciente | Fim definitivo; paciente não reentra | | | |
 
 ### 3.2 Modelo de sessão e consistência
@@ -218,6 +218,37 @@ sequenceDiagram
 
 **PoC pendente:** mecanismo exato de confirmação de mídia bidirecional por provider escolhido.
 
+### 3.2.2 Política de reconexão (C3)
+
+**Decisão:** modelo **híbrido** — nem “mesma sessão técnica cega” nem “nova sessão sempre”.
+
+| Camada | Comportamento |
+|--------|---------------|
+| **Negócio** | Mesma consulta (`consultaId`) e mesmo `sessionId` na capability — continuidade de negócio **sempre** |
+| **Capability** | Queda de participante → **não** manter `ativa` plena; transicionar para `mídia_pendente` (ou `reconectando`) até mídia bidirecional confirmada de novo |
+| **Provider** | **Preferir** mesma room enquanto válida; token novo na reentrada; **nova room** apenas se a atual expirou ou falhou |
+| **WebRTC** | Sempre reestabelecimento de mídia — nunca assumir peer connection contínua |
+
+**Rejeitado:**
+
+- Manter `ativa` durante queda parcial → reproduz desencontro (UI “ok”, mídia morta)
+- Nova room/sessão provider a **cada** queda → fragmenta estado, billing e correlação; risco de salas distintas
+
+**Fluxo resumido:**
+
+1. Provider/capability detecta desconexão de um participante
+2. Capability sai de `ativa` → `mídia_pendente` / `reconectando`
+3. Participante retorna à **mesma room** (se válida) ou room nova (fallback)
+4. Mídia bidirecional confirmada → `ativa`
+
+**Adiado (não responder nesta rodada):**
+
+- Duração do **grace period**
+- Comportamento ao **expirar** grace period
+- Quem permanece na room enquanto o outro reconecta (UX detalhada)
+
+Esses itens **não bloqueiam** a decisão arquitetural acima; entram em rodada posterior de produto ou PoC.
+
 ### 3.3 Colocação arquitetural (H1 vs H2)
 
 | Critério | Peso (1–3) | H1 | H2 | Notas |
@@ -240,7 +271,7 @@ _Escala: ❌ = desfavorável · ➖ = neutro · ✅ = favorável._
 | Autorização de entrada (roles) | ✅ regra | ✅ enforce (tokens) | Api.Saúde autoriza; capability emite credencial |
 | Limite de duração (~60 min) | ✅ regra | ✅ enforce técnico | |
 | Encerramento e veto pós-fim (C4) | ✅ regra (médico) | ✅ transição `vetada` | Api.Saúde comanda; capability executa |
-| Política de reconexão (C3) | ✅ regra | ✅ mecanismo | Pendente: mesma sessão vs nova |
+| Política de reconexão (C3) | ✅ regra | ✅ mecanismo | Modelo híbrido §3.2.2; grace period adiado |
 | Emissão de credenciais/tokens de mídia | — | ✅ | |
 | **Estado da sessão (fonte da verdade)** | — | ✅ | Api.Saúde consulta, não possui |
 | Métricas para custo e SLA | ✅ atribuição | ✅ telemetria mídia | |
@@ -348,7 +379,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 >
 > **H3 esclarecido:** GetStream hoje = **chat**. Vídeo (GetStream ou outro) = SDKs diferentes + módulos novos no backend e frontend — **não** é habilitar função no produto existente. Ganho de H3: familiaridade com vendor e práticas transversais; **não** reduz o escopo da capability H2.
 >
-> **Ainda exige decisão/PoC:** política de reconexão (C3), causa raiz dos desencontros, taxa de no-show, migração Twilio, mecanismo de confirmação de mídia bidirecional por provider.
+> **Ainda exige decisão/PoC:** causa raiz dos desencontros, taxa de no-show, migração Twilio, confirmação de mídia bidirecional por provider, **grace period C3 (adiado)**.
 
 ---
 
@@ -361,7 +392,8 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 | 3 | Quem inicia a sala (médico primeiro?) | **Paciente pode entrar primeiro** — aguarda médico; ordem simétrica na capability (`aguardando` = 1/2). Consulta inicia quando médico entra + mídia ok (§0.3) | Produto | | | ✅ Resolvido |
 | 4 | Definição operacional de “desencontro” | Prioridade de reconexão/estado | Produto / suporte | | | 🟡 Parcial — sintoma definido; causa raiz pendente |
 | 5 | Compliance (LGPD, retenção de metadados/logs) | Escopo MVP vs jurídico | Jurídico / segurança | | | 🔴 Aberto — **gravação fora de escopo** (§0.4) |
-| 6 | SLA de produto (% reconexão, tempo lobby) | SLIs e arquitetura | Produto + SRE | | | 🔴 Aberto |
+| 6 | SLA de produto (% reconexão, tempo lobby) | SLIs e arquitetura | Produto + SRE | | | 🔴 Aberto — grace period C3 **adiado** |
+| 9 | Grace period e expiração na reconexão (C3) | Timeout, custo de room ociosa, UX pós-queda | Produto / PoC | | | ⏸️ **Adiado** — fora desta rodada |
 | 7 | Gravação / auditoria no roadmap | Impacto arquitetura cedo | Produto | | | ✅ Fora de escopo (§0.4) |
 | 8 | GetStream / realtime cobre vídeo? | Assumir H3 indevidamente | Produto / engenharia | | | ✅ Resolvido — chat only; vídeo = SDKs + módulos novos (§0.1) |
 
@@ -392,9 +424,9 @@ Use antes de qualquer PoC: a abordagem escolhida precisa **endereçar explicitam
 
 ### C3 — Reconexão
 
-- [ ] Política documentada: mesma sessão vs nova
-- [ ] Grace period e expiração
-- [ ] Outro participante permanece na sala ou também reconecta?
+- [x] Política documentada: modelo híbrido — mesma sessão negócio, preferir mesma room, revalidar mídia (§3.2.2)
+- [ ] Grace period e expiração — **adiado**
+- [ ] Outro participante permanece na sala ou também reconecta? — **adiado** (UX)
 - [ ] Sincronização de estado após reconexão (evitar desencontro)
 - [ ] SLI: reconexão bem-sucedida em X minutos
 
@@ -420,7 +452,8 @@ stateDiagram-v2
     MidiaPendente --> Ativa: áudio/vídeo bidirecional confirmado
     MidiaPendente --> Aguardando: mídia não estabelecida (timeout)
     Aguardando --> Encerrada: timeout ou abandono (C2)
-    Ativa --> Ativa: reconexão (C3)
+    Ativa --> MidiaPendente: participante desconectou (C3)
+    MidiaPendente --> Ativa: reconexão + mídia bidirecional ok
     Ativa --> Encerrada: encerramento normal
     Ativa --> Vetada: médico encerra e veta (C4)
     Encerrada --> [*]
@@ -432,8 +465,9 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 **Decisões pendentes no diagrama:**
 
 - [x] `MidiaPendente → Ativa`: capability confirma mídia bidirecional (webhooks provider; ver §3.2.1)
+- [x] `Ativa → MidiaPendente` na reconexão: revalidar mídia; preferir mesma room (§3.2.2)
 - [ ] Quem pode transicionar `Aguardando → Encerrada`?
-- [ ] `Ativa → Ativa` na reconexão: mesma sala ou nova?
+- [ ] Comportamento ao expirar grace period — **adiado**
 - [ ] `Vetada` impede qualquer reentrada ou só paciente?
 
 ---
@@ -489,3 +523,4 @@ Somente **após** fechar critérios acima — não antecipar provider.
 | 2026-05-20 | | Fonte da verdade: capability H2 orquestra estado; Api.Saúde = negócio (§3.2.1) |
 | 2026-05-20 | | Ordem de entrada: paciente pode entrar primeiro; aguarda médico (§0.3) |
 | 2026-05-20 | | Gravação de vídeo declarada fora de escopo (§0.4) |
+| 2026-05-20 | | C3: modelo híbrido de reconexão; grace period adiado (§3.2.2) |

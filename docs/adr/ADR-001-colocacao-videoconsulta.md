@@ -28,6 +28,7 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 - **Estado da sessão:** capability H2 = fonte da verdade; Api.Saúde = consulta de negócio; provider = fatos de mídia
 - **Ordem de entrada:** paciente pode entrar primeiro; aguarda médico; capability trata ordem como simétrica (`aguardando` = 1/2)
 - **Fora de escopo:** gravação de vídeo no MVP / spike
+- **C3:** modelo híbrido de reconexão (§3.2.2); grace period **adiado**
 
 ---
 
@@ -39,7 +40,7 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 
 **Fonte da verdade do estado da sessão:** **Capability de vídeo (H2)** — estados `criada` → `aguardando` → `mídia_pendente` → `ativa` → `encerrada` / `vetada`. Api.Saúde orquestra negócio e emite comandos; provider informa fatos de mídia via webhooks; clientes nunca são fonte da verdade. Ver [SPIKE.md §3.2.1](../../SPIKE.md).
 
-**Política de reconexão (C3):** _mesma sessão técnica / nova sessão com continuidade de negócio — pendente_
+**Política de reconexão (C3):** **Modelo híbrido** — mesma sessão de negócio na capability; preferir mesma room do provider; transição `ativa` → `mídia_pendente` na queda; mídia bidirecional revalidada antes de retornar a `ativa`; nova room apenas como fallback. **Grace period:** adiado (fora desta rodada). Ver [SPIKE.md §3.2.2](../../SPIKE.md).
 
 ---
 
@@ -90,6 +91,8 @@ Referência completa: [SPIKE.md — seções 3 e 4](../../SPIKE.md).
 | H2 — _se rejeitada_ | |
 | Manter videoconsulta no legado durante reboot | Contradiz intenção do reboot; nova Api.Saúde continuaria dependente da base obsoleta |
 | Estado de sessão no cliente ou só no provider | Cliente = desencontros; provider = não conhece regras C4/veto |
+| Reconexão mantendo `ativa` sem revalidar mídia | Reproduz desencontro documentado no legado |
+| Nova room provider a cada queda | Fragmenta sessão; risco de participantes em salas distintas |
 | Api.Saúde como fonte da verdade de sessão de vídeo | Repete acoplamento H1; mistura negócio com mídia |
 
 ---
