@@ -27,6 +27,7 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 - **Desencontro:** médico e paciente na chamada, mas sem se ver/ouvir (falha de mídia, não só de lobby)
 - **Estado da sessão:** capability H2 = fonte da verdade; Api.Saúde = consulta de negócio; provider = fatos de mídia
 - **Ordem de entrada:** paciente pode entrar primeiro; aguarda médico; capability trata ordem como simétrica (`aguardando` = 1/2)
+- **Fora de escopo:** gravação de vídeo no MVP / spike
 
 ---
 

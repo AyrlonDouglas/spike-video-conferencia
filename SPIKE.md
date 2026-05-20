@@ -24,6 +24,7 @@ Respostas coletadas que orientam a spike. Atualizar conforme novos dados.
 | O que é “desencontro”? | Médico e paciente **estão na chamada** (UI/estado indicam conexão), mas **não se veem nem se ouvem** | Falha de **mídia/conectividade**, não só de lobby; exige verificação explícita de par conectado e observabilidade |
 | Reboot da Api.Saúde | Em andamento — videoconsulta é **capability core** | Core no legado **fugiria** da intenção do reboot; vídeo entra no programa via H2 (§0.2) |
 | Quem entra primeiro na sala? | **Paciente pode entrar primeiro** (comportamento atual) — fica aguardando até o médico entrar para iniciar a consulta | Primeiro participante → `aguardando`; segundo → `mídia_pendente`; ver §0.3 |
+| Gravação de vídeo | **Fora de escopo** | Spike e MVP não exigem gravação; ver §0.4 |
 
 ### Problema atual (solução acoplada legada)
 
@@ -103,6 +104,16 @@ A Api.Saúde está passando por **reboot** — reconstrução do núcleo do sist
 - UX mobile (paciente): tela de espera explícita enquanto médico não entra.
 - C2 relevante: **paciente aguardando médico** que não entra (além do inverso).
 - C4: médico encerra após tempo limite mesmo se paciente nunca entrou ou já estava aguardando.
+
+### Fora de escopo (MVP / spike)
+
+| Item | Status | Implicação |
+|------|--------|------------|
+| **Gravação de vídeo** | ❌ Fora de escopo | Arquitetura MVP **não** precisa prever storage, playback, consentimento de gravação nem APIs de recording |
+| Transcrição | ❌ Fora de escopo (implícito) | Mesmo raciocínio — não bloqueia escolha de provider na spike |
+| 3º participante / salas multi-participante | ❌ Fora de escopo | MVP fixo em 1:1 (§0) |
+
+**Nota:** a capability H2 pode evoluir no futuro para suportar gravação, mas **não é requisito** desta spike nem critério de decisão de provider/MVP.
 
 **Ordem de grandeza (baseline):**
 
@@ -294,7 +305,7 @@ Custo_mensal ≈ N_dia × 30 × (
 |----------|-------------------|-------|
 | Troca de provider de mídia sem reescrever regras de consulta | | |
 | Clientes heterogêneos (web, app, futuros produtos) | **3** | Paciente mobile-first; profissional/backoffice desktop+responsivo — SDK/contrato deve funcionar em ambos |
-| Extensões futuras (gravação, transcrição, 3º participante) | | |
+| Extensões futuras (transcrição, 3º participante) | **1** | Fora do MVP; gravação também **fora de escopo** (§0.4) |
 | Onde aceitamos lock-in (mídia vs sinalização vs estado) | | |
 
 ### 3.8 Migração desde Go Rooms (Twilio)
@@ -303,7 +314,7 @@ Custo_mensal ≈ N_dia × 30 × (
 |------|----------------|
 | Paridade mínima com C1–C4 antes de desligar legado | |
 | Estratégia (feature flag, cohort, rollback) | |
-| Comportamento aceitável **diferente** no MVP | |
+| Comportamento aceitável **diferente** no MVP | Sem gravação de vídeo (§0.4) |
 | Período de convivência dupla | |
 
 ---
@@ -349,9 +360,9 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 | 2 | Clientes: web, mobile, ambos | Contrato e SDK | Arquitetura frontend | Produto | | ✅ Resolvido (§0) |
 | 3 | Quem inicia a sala (médico primeiro?) | **Paciente pode entrar primeiro** — aguarda médico; ordem simétrica na capability (`aguardando` = 1/2). Consulta inicia quando médico entra + mídia ok (§0.3) | Produto | | | ✅ Resolvido |
 | 4 | Definição operacional de “desencontro” | Prioridade de reconexão/estado | Produto / suporte | | | 🟡 Parcial — sintoma definido; causa raiz pendente |
-| 5 | Compliance (LGPD, retenção, gravação) | Escopo MVP vs roadmap | Jurídico / segurança | | | 🔴 Aberto |
+| 5 | Compliance (LGPD, retenção de metadados/logs) | Escopo MVP vs jurídico | Jurídico / segurança | | | 🔴 Aberto — **gravação fora de escopo** (§0.4) |
 | 6 | SLA de produto (% reconexão, tempo lobby) | SLIs e arquitetura | Produto + SRE | | | 🔴 Aberto |
-| 7 | Gravação / auditoria no roadmap | Impacto arquitetura cedo | Produto | | | 🔴 Aberto |
+| 7 | Gravação / auditoria no roadmap | Impacto arquitetura cedo | Produto | | | ✅ Fora de escopo (§0.4) |
 | 8 | GetStream / realtime cobre vídeo? | Assumir H3 indevidamente | Produto / engenharia | | | ✅ Resolvido — chat only; vídeo = SDKs + módulos novos (§0.1) |
 
 ---
@@ -436,7 +447,7 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 | Diagrama de estados validado (seção 7) | ⬜ | |
 | Matriz H1/H2/H3 preenchida (seção 4) | ✅ | H1 rejeitada; H2 direção escolhida |
 | Modelo de custo com variáveis (seção 3.5) | 🟡 | Baseline numérico; falta no-show e custo_minuto |
-| Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | #2, #3, #8 resolvidos; #1 e #4 parciais |
+| Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | #2, #3, #7, #8 resolvidos; #1 e #4 parciais |
 | ADR de colocação arquitetural | ⬜ | Ver [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) |
 | Lista do que o PoC futuro deve provar | ⬜ | Ver seção 9 |
 
@@ -477,3 +488,4 @@ Somente **após** fechar critérios acima — não antecipar provider.
 | 2026-05-20 | | Critério reboot Api.Saúde: capability core via H2, não no legado (§0.2) |
 | 2026-05-20 | | Fonte da verdade: capability H2 orquestra estado; Api.Saúde = negócio (§3.2.1) |
 | 2026-05-20 | | Ordem de entrada: paciente pode entrar primeiro; aguarda médico (§0.3) |
+| 2026-05-20 | | Gravação de vídeo declarada fora de escopo (§0.4) |
