@@ -30,6 +30,9 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 - **Fora de escopo:** gravação de vídeo no MVP / spike
 - **C3:** modelo híbrido de reconexão (§3.2.2); grace period **adiado**
 - **PoC:** valida arquitetura **nova**; **não** reproduz desencontros do legado Api.Saúde
+- **C4:** só médico veta; paciente tardio não entra na sala
+- **Migração:** cutover com reboot Api.Saúde; sem integração no legado
+- **C2:** timeout/encerramento = regra do consumidor; valores adiados
 
 ---
 
@@ -42,6 +45,12 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 **Fonte da verdade do estado da sessão:** **Capability de vídeo (H2)** — estados `criada` → `aguardando` → `mídia_pendente` → `ativa` → `encerrada` / `vetada`. Api.Saúde orquestra negócio e emite comandos; provider informa fatos de mídia via webhooks; clientes nunca são fonte da verdade. Ver [SPIKE.md §3.2.1](../../SPIKE.md).
 
 **Política de reconexão (C3):** **Modelo híbrido** — mesma sessão de negócio na capability; preferir mesma room do provider; transição `ativa` → `mídia_pendente` na queda; mídia bidirecional revalidada antes de retornar a `ativa`; nova room apenas como fallback. **Grace period:** adiado (fora desta rodada). Ver [SPIKE.md §3.2.2](../../SPIKE.md).
+
+**C4:** apenas médico encerra/veta (via Api.Saúde); paciente tardio **não entra** na sala — estado `vetada`.
+
+**C2:** timeout de lobby e quem encerra = **regra do consumidor** (Api.Saúde); capability expõe mecanismo. Valores concretos adiados. Ver [SPIKE.md §0.5](../../SPIKE.md).
+
+**Migração Twilio:** entrega **junto com reboot** da Api.Saúde; **não** integrar na Api.Saúde legada — cutover no go-live.
 
 ---
 

@@ -25,6 +25,9 @@ Respostas coletadas que orientam a spike. Atualizar conforme novos dados.
 | Reboot da Api.Saúde | Em andamento — videoconsulta é **capability core** | Core no legado **fugiria** da intenção do reboot; vídeo entra no programa via H2 (§0.2) |
 | Quem entra primeiro na sala? | **Paciente pode entrar primeiro** (comportamento atual) — fica aguardando até o médico entrar para iniciar a consulta | Primeiro participante → `aguardando`; segundo → `mídia_pendente`; ver §0.3 |
 | Gravação de vídeo | **Fora de escopo** | Spike e MVP não exigem gravação; ver §0.4 |
+| C4 — veto e paciente tardio | **Sim:** só médico encerra/veta; paciente tardio **não entra** na sala | Transição `vetada`; enforce na capability (§0.5) |
+| Migração Twilio | **Junto com reboot** da Api.Saúde — **não** integrar na Api.Saúde legada | Cutover no reboot; sem convivência no legado (§0.5) |
+| C2 — timeout lobby / quem encerra | **Regra do consumidor** (ex.: Api.Saúde), não fixada na capability | Valores concretos **adiados**; capability expõe mecanismo (§0.5) |
 
 ### Problema atual (solução acoplada legada)
 
@@ -115,6 +118,35 @@ A Api.Saúde está passando por **reboot** — reconstrução do núcleo do sist
 
 **Nota:** a capability H2 pode evoluir no futuro para suportar gravação, mas **não é requisito** desta spike nem critério de decisão de provider/MVP.
 
+### C2, C4 e migração (decisões complementares)
+
+#### C4 — Encerramento e veto
+
+| Regra | Decisão |
+|-------|---------|
+| Quem veta | **Médico** (via Api.Saúde → comando para capability) |
+| Paciente tardio após encerramento/veto | **Não consegue entrar** na sala — bloqueio técnico + regra de negócio |
+| Estado capability | `vetada` — terminal para reentrada do paciente |
+
+#### C2 — No-show / lobby
+
+| Aspecto | Decisão |
+|---------|---------|
+| Timeout de lobby (`T_lobby`) | **Regra do consumidor** (quem usa a capability — ex.: Api.Saúde rebootada), **não** valor fixo do produto vídeo |
+| Quem encerra quando o outro não entra | **Regra do consumidor** — capability executa comando/timeout configurado pelo integrador |
+| Valores concretos | **Adiados** — definidos quando o consumidor integrar (fora desta rodada da spike) |
+
+**Implicação arquitetural:** a capability H2 expõe **mecanismo** (`encerrar`, `configurar timeout`, transição `aguardando → encerrada`); a Api.Saúde (ou outro produto) define **política** C2.
+
+#### Migração Twilio / Go Rooms
+
+| Aspecto | Decisão |
+|---------|---------|
+| Onde entra a nova capability | **Api.Saúde rebootada** — entrega conjunta com o reboot |
+| Api.Saúde legada | **Não** recebe a nova integração de vídeo |
+| Estratégia | **Cutover no reboot** (não convivência dual stack no legado); legado Twilio permanece até desligar com o reboot |
+| Implicação | PoC e provider servem a **plataforma nova**; migração = substituir legado quando reboot go-live |
+
 **Ordem de grandeza (baseline):**
 
 ```
@@ -135,7 +167,7 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 | 4 | O que são os **“desencontros”** hoje (sintoma, causa provável, impacto)? | **Sintoma:** na chamada, mas não se veem/ouvem. **Impacto:** consulta inviável. **Causa raiz no legado:** não será investigada via PoC — mitigação na nova arquitetura (§3.2.1, §11) | Produto / suporte | 🟢 Suficiente p/ spike |
 | 5 | Quanto de **prática operacional do ecossistema** (H3) se aplica a vídeo 1:1? | **Limitado:** chat GetStream não transfere integração de vídeo — SDKs distintos, módulos backend/frontend novos (§0.1). Reuso: familiaridade com vendor + práticas transversais (auth, observabilidade) | Confirmação engenharia | 🟢 Decidido |
 | 6 | Qual **modelo de custo** escala de forma sustentável com o volume esperado? | Baseline parametrizado (§3.5); **aceitabilidade** depende de proposta + validação stakeholders | §0, §3.5 | 🟡 Parcial |
-| 7 | Qual estratégia de **migração** desde Go Rooms (Twilio) é aceitável no MVP? | _Pendente_ | | 🔴 Aberto |
+| 7 | Qual estratégia de **migração** desde Go Rooms (Twilio) é aceitável no MVP? | **Cutover com reboot** da Api.Saúde — nova capability **não** entra no legado (§0.5) | Reboot + produto | 🟢 Decidido |
 
 ---
 
@@ -158,9 +190,9 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 | Cenário | Requisito funcional | Regra de negócio | Responsabilidade negócio | Responsabilidade vídeo | Critério de aceite (spike) |
 |---------|---------------------|------------------|--------------------------|------------------------|----------------------------|
 | **C1** | Médico e paciente em consulta ~60 min | Duração média **~60 min** confirmada; ambos podem encerrar? | | | Duração validada (§0) |
-| **C2** | Um lado não entra | Timeout de espera; quem encerra; sessão órfã | | | |
+| **C2** | Um lado não entra | Timeout e quem encerra = **regra do consumidor**; valores adiados | Consumidor (Api.Saúde) | Capability (mecanismo) | §0.5 |
 | **C3** | Reconexão após queda | Modelo híbrido §3.2.2; grace period **adiado** | | | Arquitetura definida |
-| **C4** | Médico encerra e veta paciente | Fim definitivo; paciente não reentra | | | |
+| **C4** | Médico encerra e veta; paciente tardio não entra | Só médico veta; bloqueio de reentrada do paciente | Api.Saúde | Capability (`vetada`) | §0.5 |
 
 ### 3.2 Modelo de sessão e consistência
 
@@ -270,8 +302,9 @@ _Escala: ❌ = desfavorável · ➖ = neutro · ✅ = favorável._
 | Agendamento / slot da consulta | ✅ | — | |
 | Autorização de entrada (roles) | ✅ regra | ✅ enforce (tokens) | Api.Saúde autoriza; capability emite credencial |
 | Limite de duração (~60 min) | ✅ regra | ✅ enforce técnico | |
-| Encerramento e veto pós-fim (C4) | ✅ regra (médico) | ✅ transição `vetada` | Api.Saúde comanda; capability executa |
+| Encerramento e veto pós-fim (C4) | ✅ regra (médico); paciente tardio bloqueado | ✅ transição `vetada` + enforce | §0.5 |
 | Política de reconexão (C3) | ✅ regra | ✅ mecanismo | Modelo híbrido §3.2.2; grace period adiado |
+| Política C2 (lobby / no-show) | ✅ **regra do consumidor** | ✅ **mecanismo** (timeout, encerrar) | Valores concretos adiados — §0.5 |
 | Emissão de credenciais/tokens de mídia | — | ✅ | |
 | **Estado da sessão (fonte da verdade)** | — | ✅ | Api.Saúde consulta, não possui |
 | Métricas para custo e SLA | ✅ atribuição | ✅ telemetria mídia | |
@@ -287,7 +320,7 @@ Preencher variáveis; valores numéricos podem ficar como placeholder até fase 
 | Taxa de no-show (C2) | `P_no_show` | _pendente_ | Impacta custo de lobby |
 | Taxa de reconexão por consulta | `P_recon` | _pendente_ | Crítico no mobile |
 | Participantes médios por sessão ativa | `P_sess` | **2** (fixo) | Q&A produto |
-| Minutos ociosos em lobby (C2) | `T_lobby` | _pendente_ | Depende de timeout de espera |
+| Minutos ociosos em lobby (C2) | `T_lobby` | _adiado — definido pelo consumidor_ | §0.5 |
 
 **Drivers de custo a mapear (qualquer abordagem):**
 
@@ -343,10 +376,12 @@ Custo_mensal ≈ N_dia × 30 × (
 
 | Item | Decisão / nota |
 |------|----------------|
-| Paridade mínima com C1–C4 antes de desligar legado | |
-| Estratégia (feature flag, cohort, rollback) | |
+| Onde a nova capability entra | **Api.Saúde rebootada** — entrega conjunta; **não** no legado (§0.5) |
+| Estratégia | **Cutover no go-live do reboot** — sem integrar vídeo novo na Api.Saúde legada |
+| Paridade mínima com C1–C4 antes de desligar legado | A definir na fase de implementação |
+| Rollback | A definir na fase de implementação (reboot) |
 | Comportamento aceitável **diferente** no MVP | Sem gravação de vídeo (§0.4) |
-| Período de convivência dupla | |
+| Período de convivência dupla | **Não** no legado — legado Twilio até reboot; depois nova stack |
 
 ---
 
@@ -379,7 +414,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 >
 > **H3 esclarecido:** GetStream hoje = **chat**. Vídeo (GetStream ou outro) = SDKs diferentes + módulos novos no backend e frontend — **não** é habilitar função no produto existente. Ganho de H3: familiaridade com vendor e práticas transversais; **não** reduz o escopo da capability H2.
 >
-> **Ainda exige decisão/PoC:** taxa de no-show, migração Twilio, confirmação de mídia bidirecional por provider, **grace period C3 (adiado)**. **Desencontros do legado:** não serão reproduzidos/investigados em PoC (§11).
+> **Ainda exige decisão/PoC:** taxa de no-show, confirmação de mídia bidirecional por provider, **grace period C3 (adiado)**, **valores C2 pelo consumidor (adiado)**. **Desencontros do legado:** não serão reproduzidos/investigados em PoC (§11).
 
 ---
 
@@ -394,6 +429,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 | 5 | Compliance (LGPD, retenção de metadados/logs) | Escopo MVP vs jurídico | Jurídico / segurança | | | 🔴 Aberto — **gravação fora de escopo** (§0.4) |
 | 6 | SLA de produto (% reconexão, tempo lobby) | SLIs e arquitetura | Produto + SRE | | | 🔴 Aberto — grace period C3 **adiado** |
 | 9 | Grace period e expiração na reconexão (C3) | Timeout, custo de room ociosa, UX pós-queda | Produto / PoC | | | ⏸️ **Adiado** — fora desta rodada |
+| 10 | Valores C2 (`T_lobby`, quem encerra) | Custo, UX lobby | Consumidor (Api.Saúde) | | | ⏸️ **Adiado** — regra do consumidor definida (§0.5) |
 | 7 | Gravação / auditoria no roadmap | Impacto arquitetura cedo | Produto | | | ✅ Fora de escopo (§0.4) |
 | 8 | GetStream / realtime cobre vídeo? | Assumir H3 indevidamente | Produto / engenharia | | | ✅ Resolvido — chat only; vídeo = SDKs + módulos novos (§0.1) |
 
@@ -416,8 +452,8 @@ Use antes de qualquer PoC: a abordagem escolhida precisa **endereçar explicitam
 
 ### C2 — Um lado não entra
 
-- [ ] Estado “aguardando” com timeout configurável (inclui **paciente aguardando médico** — fluxo atual)
-- [ ] Quem pode encerrar sem atendimento
+- [x] Política C2: timeout e encerramento são **regra do consumidor**; capability expõe mecanismo (§0.5)
+- [ ] Valores concretos (`T_lobby`, quem encerra) — **adiado** (consumidor define na integração)
 - [ ] Comportamento de sessão órfã (cleanup, billing)
 - [ ] UX clara para o lado que entrou
 - [ ] Métrica: taxa de no-show / abandono em lobby
@@ -432,10 +468,9 @@ Use antes de qualquer PoC: a abordagem escolhida precisa **endereçar explicitam
 
 ### C4 — Médico encerra e veta paciente
 
-- [ ] Transição para estado terminal (não reentrada)
-- [ ] Apenas médico (ou regra explícita) dispara veto
-- [ ] Paciente bloqueado após fim — técnico e de negócio
-- [ ] Mensagem/UX para paciente tardio
+- [x] Transição para estado terminal (`vetada`) — paciente **não reentra**
+- [x] Apenas **médico** (via Api.Saúde) dispara veto
+- [x] Paciente tardio **bloqueado** — não consegue entrar na sala (§0.5)
 - [ ] Auditoria do evento de encerramento
 
 ---
@@ -466,9 +501,9 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 
 - [x] `MidiaPendente → Ativa`: capability confirma mídia bidirecional (webhooks provider; ver §3.2.1)
 - [x] `Ativa → MidiaPendente` na reconexão: revalidar mídia; preferir mesma room (§3.2.2)
-- [ ] Quem pode transicionar `Aguardando → Encerrada`?
+- [ ] Quem pode transicionar `Aguardando → Encerrada`? — **consumidor** define política C2 (§0.5)
 - [ ] Comportamento ao expirar grace period — **adiado**
-- [ ] `Vetada` impede qualquer reentrada ou só paciente?
+- [x] `Vetada` impede reentrada do **paciente**; paciente tardio não entra (§0.5)
 
 ---
 
@@ -477,7 +512,7 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 | Entregável | Status | Link / nota |
 |------------|--------|-------------|
 | Contexto Q&A documentado (seção 0) | ✅ | |
-| Mapa cenário → requisito → dono (seção 3.1 + 3.4) | 🟡 | Fronteira negócio × vídeo parcialmente preenchida |
+| Mapa cenário → requisito → dono (seção 3.1 + 3.4) | 🟡 | C2/C4/migração parcialmente preenchidos (§0.5) |
 | Diagrama de estados validado (seção 7) | ⬜ | |
 | Matriz H1/H2/H3 preenchida (seção 4) | ✅ | H1 rejeitada; H2 direção escolhida |
 | Modelo de custo com variáveis (seção 3.5) | 🟡 | Baseline numérico; falta no-show e custo_minuto |
@@ -541,17 +576,16 @@ Checklist para **fechar a fase “qual abordagem?”** e **abrir a fase provider
 
 ### B. Regras de produto mínimas (obrigatório antes de encerrar)
 
-- [ ] **C2** — timeout de lobby (`T_lobby`) definido
-- [ ] **C2** — quem pode encerrar quando o outro não entra
-- [ ] **C4** — confirmação: só médico dispara `vetada`?
-- [ ] **C4** — UX/regra para paciente tardio após encerramento
-- [ ] **Migração Twilio** — estratégia escolhida (convivência, feature flag, rollback)
+- [x] **C2** — política: regra do **consumidor**; capability = mecanismo (§0.5)
+- [ ] **C2** — valores concretos (`T_lobby`, quem encerra) — **adiado**
+- [x] **C4** — só médico veta; paciente tardio não entra
+- [x] **Migração Twilio** — cutover com reboot; **não** integrar no legado (§0.5)
 - [ ] Diagrama de estados (§7) **validado** com produto + engenharia
 
 ### C. Documentação (obrigatório)
 
 - [ ] [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) status → **Aceito**
-- [ ] Fronteira negócio × capability (§3.4) revisada após C2/C4
+- [ ] Fronteira negócio × capability (§3.4) revisada após C2/C4 — 🟡 parcial (§0.5)
 - [ ] Recomendação §4 revisada — sem itens 🔴 bloqueantes na §1
 
 ### D. Pode paralelizar (não bloqueia encerramento)
@@ -599,3 +633,4 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 | 2026-05-20 | | Gravação de vídeo declarada fora de escopo (§0.4) |
 | 2026-05-20 | | C3: modelo híbrido de reconexão; grace period adiado (§3.2.2) |
 | 2026-05-20 | | §11 DoD; PoC exclui validação de desencontros do legado |
+| 2026-05-20 | | C4, migração (reboot), C2 regra do consumidor (§0.5) |
