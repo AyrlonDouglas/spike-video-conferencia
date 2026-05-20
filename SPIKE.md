@@ -132,7 +132,7 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 | 1 | A capability de vídeo deve viver **acoplada à Api.Saúde** (H1) ou como **serviço/capability compartilhada** (H2)? | **H2 — capability desacoplada**, integrada ao **reboot** da Api.Saúde como consumidor. H1/legado **rejeitados** (§0, §0.2) | Decisão de time + reboot | 🟢 Decidido |
 | 2 | Quem é a **fonte da verdade** do estado da sessão (criada, lobby, ativa, encerrada, vetada)? | **Capability de vídeo (H2)** — orquestra estados e transições. Api.Saúde = negócio da consulta (comandos). Provider = fatos de mídia (webhooks). Clientes **nunca** são fonte da verdade (§3.2.1) | Desencontro + H2 + 3 clientes | 🟢 Decidido |
 | 3 | Reconexão (C3) é **mesma sessão técnica** ou **nova sessão com continuidade de negócio**? | **Modelo híbrido (§3.2.2):** mesma sessão de **negócio** na capability; **preferir** mesma room do provider; mídia **sempre** revalidada via `mídia_pendente`. Nova room só como fallback | Desencontro + mobile | 🟢 Decidido |
-| 4 | O que são os **“desencontros”** hoje (sintoma, causa provável, impacto)? | **Sintoma:** médico e paciente na chamada, mas não se veem/ouvem. **Impacto:** consulta inviável. **Causa:** a confirmar no PoC (§0) | Produto / suporte | 🟡 Parcial — sintoma definido |
+| 4 | O que são os **“desencontros”** hoje (sintoma, causa provável, impacto)? | **Sintoma:** na chamada, mas não se veem/ouvem. **Impacto:** consulta inviável. **Causa raiz no legado:** não será investigada via PoC — mitigação na nova arquitetura (§3.2.1, §11) | Produto / suporte | 🟢 Suficiente p/ spike |
 | 5 | Quanto de **prática operacional do ecossistema** (H3) se aplica a vídeo 1:1? | **Limitado:** chat GetStream não transfere integração de vídeo — SDKs distintos, módulos backend/frontend novos (§0.1). Reuso: familiaridade com vendor + práticas transversais (auth, observabilidade) | Confirmação engenharia | 🟢 Decidido |
 | 6 | Qual **modelo de custo** escala de forma sustentável com o volume esperado? | Baseline parametrizado (§3.5); **aceitabilidade** depende de proposta + validação stakeholders | §0, §3.5 | 🟡 Parcial |
 | 7 | Qual estratégia de **migração** desde Go Rooms (Twilio) é aceitável no MVP? | _Pendente_ | | 🔴 Aberto |
@@ -379,7 +379,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 >
 > **H3 esclarecido:** GetStream hoje = **chat**. Vídeo (GetStream ou outro) = SDKs diferentes + módulos novos no backend e frontend — **não** é habilitar função no produto existente. Ganho de H3: familiaridade com vendor e práticas transversais; **não** reduz o escopo da capability H2.
 >
-> **Ainda exige decisão/PoC:** causa raiz dos desencontros, taxa de no-show, migração Twilio, confirmação de mídia bidirecional por provider, **grace period C3 (adiado)**.
+> **Ainda exige decisão/PoC:** taxa de no-show, migração Twilio, confirmação de mídia bidirecional por provider, **grace period C3 (adiado)**. **Desencontros do legado:** não serão reproduzidos/investigados em PoC (§11).
 
 ---
 
@@ -390,7 +390,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 | 1 | Volume: consultas/dia, duração média, no-show | Modelo de custo e capacidade | Dados produto/ops | Produto | | 🟡 Parcial — falta no-show |
 | 2 | Clientes: web, mobile, ambos | Contrato e SDK | Arquitetura frontend | Produto | | ✅ Resolvido (§0) |
 | 3 | Quem inicia a sala (médico primeiro?) | **Paciente pode entrar primeiro** — aguarda médico; ordem simétrica na capability (`aguardando` = 1/2). Consulta inicia quando médico entra + mídia ok (§0.3) | Produto | | | ✅ Resolvido |
-| 4 | Definição operacional de “desencontro” | Prioridade de reconexão/estado | Produto / suporte | | | 🟡 Parcial — sintoma definido; causa raiz pendente |
+| 4 | Definição operacional de “desencontro” | Prioridade de reconexão/estado | Produto / suporte | | | 🟢 Sintoma documentado; causa legado **fora de PoC** (§11) |
 | 5 | Compliance (LGPD, retenção de metadados/logs) | Escopo MVP vs jurídico | Jurídico / segurança | | | 🔴 Aberto — **gravação fora de escopo** (§0.4) |
 | 6 | SLA de produto (% reconexão, tempo lobby) | SLIs e arquitetura | Produto + SRE | | | 🔴 Aberto — grace period C3 **adiado** |
 | 9 | Grace period e expiração na reconexão (C3) | Timeout, custo de room ociosa, UX pós-queda | Produto / PoC | | | ⏸️ **Adiado** — fora desta rodada |
@@ -481,24 +481,38 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 | Diagrama de estados validado (seção 7) | ⬜ | |
 | Matriz H1/H2/H3 preenchida (seção 4) | ✅ | H1 rejeitada; H2 direção escolhida |
 | Modelo de custo com variáveis (seção 3.5) | 🟡 | Baseline numérico; falta no-show e custo_minuto |
-| Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | #2, #3, #7, #8 resolvidos; #1 e #4 parciais |
-| ADR de colocação arquitetural | ⬜ | Ver [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) |
-| Lista do que o PoC futuro deve provar | ⬜ | Ver seção 9 |
+| Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | #2–#4, #7, #8 ok ou adiados; #1 parcial; #5–#6 abertos |
+| ADR de colocação arquitetural | 🟡 | Proposto — aceitar ao cumprir §11 |
+| Definition of Done (§11) | ⬜ | Checklist de encerramento da fase arquitetural |
+| Lista do que o PoC futuro deve provar | 🟡 | Ver seção 9 — sem validação de desencontro legado |
 
 ---
 
-## 9. Escopo do PoC futuro (fora desta fase)
+## 9. Escopo do PoC futuro (fase pós-spike arquitetural)
 
-Somente **após** fechar critérios acima — não antecipar provider.
+Somente **após** cumprir [§11 — Definition of Done](#11-definition-of-done--encerramento-da-spike-arquitetural). Não antecipar provider.
+
+### Dentro do PoC (nova capability H2)
 
 | Prova | Relacionado a | Prioridade |
 |-------|---------------|------------|
-| **Mídia bidirecional confirmada antes de “ativa”** | Anti-desencontro | **Alta** |
-| Reconexão C3 em rede instável (mobile paciente) | Estado + UX + desencontro | **Alta** |
+| **Mídia bidirecional confirmada antes de “ativa”** | Design anti-desencontro na arquitetura nova | **Alta** |
+| Reconexão C3 em rede instável (mobile paciente) | Modelo híbrido §3.2.2 | **Alta** |
 | Veto pós-encerramento C4 | Regra + enforce | Alta |
 | Sessão órfã / timeout C2 | Cleanup + custo | Média |
 | Carga simultânea (pico) | Escala + custo | Média |
-| Paridade mínima vs Go Rooms | Migração | Média |
+| Paridade funcional mínima vs Go Rooms (C1–C4) | Migração | Média |
+
+### Fora do PoC
+
+| Item | Motivo |
+|------|--------|
+| **Reproduzir ou investigar desencontros do legado (Api.Saúde + Twilio acoplado)** | Problema da implementação atual; spike já define mitigação (`mídia_pendente`, capability H2). PoC valida a **solução nova**, não diagnostica o **legado** |
+| Causa raiz técnica dos incidentes históricos de desencontro | Não bloqueia decisão arquitetural; legado será substituído |
+| Grace period C3 | Adiado (§3.2.2) |
+| Gravação de vídeo | Fora de escopo (§0.4) |
+
+**Objetivo do PoC:** confirmar que a **nova arquitetura** entrega sessão estável e anti-desencontro **by design** — não revalidar falhas já conhecidas do sistema em produção.
 
 ---
 
@@ -506,7 +520,67 @@ Somente **após** fechar critérios acima — não antecipar provider.
 
 | ADR | Título | Status |
 |-----|--------|--------|
-| [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) | Colocação da capability de videoconsulta | Proposto |
+| [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) | Colocação da capability de videoconsulta | Proposto — aceitar ao cumprir §11 |
+
+---
+
+## 11. Definition of Done — encerramento da spike arquitetural
+
+Checklist para **fechar a fase “qual abordagem?”** e **abrir a fase provider + PoC** (§9). Marcar com data e responsável ao concluir.
+
+### A. Decisões arquiteturais (obrigatório)
+
+- [x] H2 — capability desacoplada escolhida; H1/legado rejeitados
+- [x] Capability H2 = fonte da verdade do estado da sessão (§3.2.1)
+- [x] Anti-desencontro by design: `mídia_pendente` antes de `ativa`
+- [x] C3 — modelo híbrido de reconexão (§3.2.2); grace period adiado
+- [x] Ordem de entrada: paciente pode entrar primeiro (§0.3)
+- [x] Gravação fora de escopo (§0.4)
+- [x] H3 esclarecido: chat GetStream ≠ vídeo
+- [x] Critério reboot: core no legado incompatível (§0.2)
+
+### B. Regras de produto mínimas (obrigatório antes de encerrar)
+
+- [ ] **C2** — timeout de lobby (`T_lobby`) definido
+- [ ] **C2** — quem pode encerrar quando o outro não entra
+- [ ] **C4** — confirmação: só médico dispara `vetada`?
+- [ ] **C4** — UX/regra para paciente tardio após encerramento
+- [ ] **Migração Twilio** — estratégia escolhida (convivência, feature flag, rollback)
+- [ ] Diagrama de estados (§7) **validado** com produto + engenharia
+
+### C. Documentação (obrigatório)
+
+- [ ] [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) status → **Aceito**
+- [ ] Fronteira negócio × capability (§3.4) revisada após C2/C4
+- [ ] Recomendação §4 revisada — sem itens 🔴 bloqueantes na §1
+
+### D. Pode paralelizar (não bloqueia encerramento)
+
+- [ ] Taxa de no-show (`P_no_show`) — modelo de custo §3.5
+- [ ] Proposta de custo com `custo_minuto` do provider escolhido
+- [ ] Compliance LGPD / retenção de metadados e logs (#5)
+- [ ] SLA numérico (#6) — grace period adiado
+- [ ] Runbooks operacionais (§3.6)
+
+### E. Explicitamente fora desta spike e do PoC
+
+- [x] PoC para **reproduzir desencontros** da Api.Saúde legada
+- [x] Investigação de **causa raiz** no Twilio acoplado / Go Rooms atual
+- [x] Gravação de vídeo
+- [x] Grace period C3 (rodada futura)
+
+### F. Gate — próxima fase liberada quando
+
+Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
+
+**Próxima fase:** pesquisa comparativa de providers → PoC da nova capability (§9) → proposta de budget.
+
+| Gate | Responsável | Data alvo | Status |
+|------|-------------|-----------|--------|
+| Spike arquitetural encerrada (§11 A+B+C) | | | ⬜ |
+| Provider escolhido | | | ⬜ |
+| PoC mínimo concluído (§9) | | | ⬜ |
+| Budget validado com stakeholders | | | ⬜ |
 
 ---
 
@@ -524,3 +598,4 @@ Somente **após** fechar critérios acima — não antecipar provider.
 | 2026-05-20 | | Ordem de entrada: paciente pode entrar primeiro; aguarda médico (§0.3) |
 | 2026-05-20 | | Gravação de vídeo declarada fora de escopo (§0.4) |
 | 2026-05-20 | | C3: modelo híbrido de reconexão; grace period adiado (§3.2.2) |
+| 2026-05-20 | | §11 DoD; PoC exclui validação de desencontros do legado |

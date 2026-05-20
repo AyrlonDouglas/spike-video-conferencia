@@ -29,6 +29,7 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 - **Ordem de entrada:** paciente pode entrar primeiro; aguarda médico; capability trata ordem como simétrica (`aguardando` = 1/2)
 - **Fora de escopo:** gravação de vídeo no MVP / spike
 - **C3:** modelo híbrido de reconexão (§3.2.2); grace period **adiado**
+- **PoC:** valida arquitetura **nova**; **não** reproduz desencontros do legado Api.Saúde
 
 ---
 
@@ -77,8 +78,8 @@ Referência completa: [SPIKE.md — seções 3 e 4](../../SPIKE.md).
 
 ### Follow-ups
 
-- [ ] PoCs listados em [SPIKE.md §9](../../SPIKE.md#9-escopo-do-poc-futuro-fora-desta-fase)
-- [ ] Unknowns da [SPIKE.md §5](../../SPIKE.md) resolvidos ou com dono
+- [ ] Cumprir [SPIKE.md §11](../../SPIKE.md#11-definition-of-done--encerramento-da-spike-arquitetural) e aceitar ADR
+- [ ] PoCs listados em [SPIKE.md §9](../../SPIKE.md#9-escopo-do-poc-futuro-fase-pós-spike-arquitetural) — sem PoC de desencontro legado
 - [ ] Contrato negócio × vídeo publicado (interno)
 
 ---
