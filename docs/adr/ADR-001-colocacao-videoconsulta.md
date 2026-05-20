@@ -22,7 +22,8 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 - ~20 consultas/dia, ~60 min, sempre 2 participantes (1:1), N em paralelo
 - Paciente mobile-first; profissional e backoffice desktop + responsivo
 - Budget: proposta paramétrica → validação stakeholders
-- Realtime do ecossistema (GetStream): **apenas chat** — vídeo usa **SDKs diferentes** e exige módulos novos no backend e frontend (não é habilitar feature)
+- Realtime do ecossistema (GetStream): **apenas chat no Dr Clin** — vídeo usa **SDKs diferentes** e exige módulos novos no backend e frontend (não é habilitar feature); **Api.Saúde não utiliza chat**
+- **Chat (Dr Clin):** concebido para chat+vídeo; entregue só chat no **Dr Clin** — **Api.Saúde não utiliza chat**; modalidade acoplada ao produto; refatoração **só se** vídeo for adicionado ao Dr Clin (§0.1 SPIKE)
 - **H1 rejeitada:** legado acoplado — acoplamento, desencontros, manutenção arriscada, artifícios Twilio; **incompatível com reboot**
 - **Desencontro:** médico e paciente na chamada, mas sem se ver/ouvir (falha de mídia, não só de lobby)
 - **Estado da sessão:** capability H2 = fonte da verdade; Api.Saúde = consulta de negócio; provider = fatos de mídia

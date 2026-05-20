@@ -2,7 +2,7 @@
 
 > **Objetivo desta spike:** definir critérios e evidências para escolher a **abordagem arquitetural** (não o provider/stack). Pesquisa de soluções e PoCs técnicos ficam para uma fase posterior.
 >
-> **Referência:** [PRD.md](./PRD.md)
+> **Referência:** [PRD.md](./PRD.md) · **Próxima fase:** [SPIKE-H2.md](./SPIKE-H2.md) (como implementar H2)
 
 ---
 
@@ -18,7 +18,8 @@ Respostas coletadas que orientam a spike. Atualizar conforme novos dados.
 | Atendimentos em paralelo? | Sim, N em paralelo | Isolamento por sessão; concorrência modesta em escala absoluta |
 | Budget aceitável? | Proposta primeiro → validação com stakeholders | Entregável financeiro é **proposta paramétrica**, não teto pré-definido |
 | Plataformas? | Paciente: **mobile-first**; profissional e backoffice: **desktop + responsivo** | Clientes heterogêneos; C3 (reconexão) crítico no mobile |
-| Realtime do ecossistema cobre vídeo? | **Não — apenas chat** (GetStream) | H3 não acelera escolha de stack de vídeo; reutilização limitada a práticas transversais |
+| Realtime do ecossistema cobre vídeo? | **Não — apenas chat** (GetStream no **Dr Clin**) | H3 não acelera escolha de stack de vídeo; Api.Saúde não usa chat; reutilização limitada a práticas transversais |
+| Chat: desenho original vs hoje | **Planejado para chat + vídeo**; entregue **só chat** no **Dr Clin**; customizações **acoplaram a modalidade de chat** ao produto — **Api.Saúde não utiliza chat** | Refatoração **só** se vídeo for adicionado ao Dr Clin; videoconsulta Api.Saúde = H2 separada — ver §0.1 |
 | GetStream vídeo = habilitar função no chat? | **Não** — SDKs distintos; exige **módulo de vídeo novo** no backend e no frontend | Esforço de integração comparable a qualquer provider; ver §0.1 |
 | Reutilizar solução acoplada atual? | **Não** — time não seguirá por H1 | Acoplamento, reuso inviável, desencontros, **manutenção arriscada** e artifícios técnicos por custo Twilio (§0) |
 | O que é “desencontro”? | Médico e paciente **estão na chamada** (UI/estado indicam conexão), mas **não se veem nem se ouvem** | Falha de **mídia/conectividade**, não só de lobby; exige verificação explícita de par conectado e observabilidade |
@@ -56,7 +57,7 @@ Os artifícios técnicos ligados ao custo da Twilio tendem a **conflitar** com c
 
 ### GetStream: chat vs vídeo (H3)
 
-O ecossistema já usa **GetStream para chat**, mas o vídeo **não** é extensão do que existe hoje:
+O **Dr Clin** já usa **GetStream para chat**; o vídeo **não** é extensão do que existe hoje nesse produto — e a **Api.Saúde não utiliza chat**:
 
 | Aspecto | Chat (hoje) | Vídeo (GetStream ou outro) |
 |---------|-------------|----------------------------|
@@ -64,6 +65,26 @@ O ecossistema já usa **GetStream para chat**, mas o vídeo **não** é extensã
 | Backend | Módulo de chat existente | **Módulo de vídeo novo** (tokens, sessões, webhooks) |
 | Frontend | UI/componentes de chat | **Módulo de vídeo novo** (paciente mobile + profissional desktop) |
 | Habilitar feature | — | **Não** basta “ligar vídeo” no GetStream; é projeto de integração completo |
+
+#### Histórico do chat no ecossistema
+
+O **Dr Clin** possui módulo de chat (GetStream) **distinto da Api.Saúde** — a Api.Saúde **não utiliza chat**. Esse módulo **foi concebido inicialmente** para suportar **chat e vídeo** como modalidades realtime no mesmo desenho. Na prática, a entrega **começou apenas com chat** — o vídeo ficou para uma fase posterior (que não ocorreu nessa base).
+
+Com o tempo, **alterações incrementais** introduziram regras e dependências **específicas do Dr Clin** dentro da camada de chat. O resultado é um **acoplamento parcial** da modalidade de mensagens ao domínio desse produto — distinto do desafio de videoconsulta na Api.Saúde (H2).
+
+| Fase | O que aconteceu | Consequência |
+|------|-----------------|--------------|
+| **Desenho inicial** | Chat + vídeo previstos no mesmo programa realtime | Expectativa de reuso entre modalidades; vídeo nunca entrou nessa stack |
+| **Entrega** | Apenas chat integrado (GetStream) no **Dr Clin** | Base operacional de chat; **sem** capability de vídeo pronta |
+| **Evolução** | Customizações acoplam a modalidade **de chat** ao **Dr Clin** | Chat **não** é hoje uma capability limpa e agnóstica de consumidor |
+| **Agora** | Refatoração **não** em andamento | Desacoplamento seria necessário **somente se** optarem por **adicionar vídeo ao Dr Clin** — escopo e timing **condicionais** a essa decisão |
+
+**Implicações para videoconsulta na Api.Saúde (esta spike):**
+
+- **Api.Saúde ≠ Dr Clin** — videoconsulta é capability **net-new** para a Api.Saúde rebootada; não estender o stack de chat acoplado do Dr Clin.
+- **Não repetir o padrão:** videoconsulta entra como **capability H2 desde o início**, com contrato estável e fronteira clara consumidor × modalidade — independentemente de provider (GetStream Video ou outro).
+- **Refatoração do chat do Dr Clin** (se vídeo for adicionado a esse produto) é **decisão separada** — não bloqueia nem substitui H2 da Api.Saúde; serve de **lição**: modalidade acoplada exige esforço posterior de desacoplamento.
+- **H3 continua com ganho limitado:** familiaridade com GetStream e práticas transversais; o módulo de chat **não** serve de template arquitetural nem reduz escopo da capability de vídeo da Api.Saúde.
 
 **O que H3 reutiliza de fato (ganho limitado):**
 
@@ -165,7 +186,7 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 | 2 | Quem é a **fonte da verdade** do estado da sessão (criada, lobby, ativa, encerrada, vetada)? | **Capability de vídeo (H2)** — orquestra estados e transições. Api.Saúde = negócio da consulta (comandos). Provider = fatos de mídia (webhooks). Clientes **nunca** são fonte da verdade (§3.2.1) | Desencontro + H2 + 3 clientes | 🟢 Decidido |
 | 3 | Reconexão (C3) é **mesma sessão técnica** ou **nova sessão com continuidade de negócio**? | **Modelo híbrido (§3.2.2):** mesma sessão de **negócio** na capability; **preferir** mesma room do provider; mídia **sempre** revalidada via `mídia_pendente`. Nova room só como fallback | Desencontro + mobile | 🟢 Decidido |
 | 4 | O que são os **“desencontros”** hoje (sintoma, causa provável, impacto)? | **Sintoma:** na chamada, mas não se veem/ouvem. **Impacto:** consulta inviável. **Causa raiz no legado:** não será investigada via PoC — mitigação na nova arquitetura (§3.2.1, §11) | Produto / suporte | 🟢 Suficiente p/ spike |
-| 5 | Quanto de **prática operacional do ecossistema** (H3) se aplica a vídeo 1:1? | **Limitado:** chat GetStream não transfere integração de vídeo — SDKs distintos, módulos backend/frontend novos (§0.1). Reuso: familiaridade com vendor + práticas transversais (auth, observabilidade) | Confirmação engenharia | 🟢 Decidido |
+| 5 | Quanto de **prática operacional do ecossistema** (H3) se aplica a vídeo 1:1? | **Limitado:** chat GetStream não transfere integração de vídeo — SDKs distintos, módulos backend/frontend novos (§0.1). Chat existe no **Dr Clin** (Api.Saúde **não** usa chat); modalidade acoplada ao produto — **lição**, não base para videoconsulta. Reuso: familiaridade com vendor + práticas transversais (auth, observabilidade) | Confirmação engenharia | 🟢 Decidido |
 | 6 | Qual **modelo de custo** escala de forma sustentável com o volume esperado? | Baseline parametrizado (§3.5); **aceitabilidade** depende de proposta + validação stakeholders | §0, §3.5 | 🟡 Parcial |
 | 7 | Qual estratégia de **migração** desde Go Rooms (Twilio) é aceitável no MVP? | **Cutover com reboot** da Api.Saúde — nova capability **não** entra no legado (§0.5) | Reboot + produto | 🟢 Decidido |
 
@@ -177,9 +198,9 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 |----|----------|--------|--------|
 | H1 | Solução acoplada à Api.Saúde | Menor complexidade inicial; maior acoplamento e menor reuso | ❌ **Rejeitada** — legado, desencontros, manutenção arriscada, artifícios Twilio; **incompatível com reboot** (§0.2) |
 | H2 | Capability desacoplada / shared | Maior reuso e evolução independente; maior custo inicial | ✅ **Direção escolhida** — capability core do reboot; Api.Saúde consome via contrato |
-| H3 | Reaproveitar provider/ecossistema (GetStream) | Familiaridade com vendor; chat já integrado | ➖ **Ganho limitado** — vídeo exige SDKs e módulos novos (backend + frontend); não é habilitar feature |
+| H3 | Reaproveitar provider/ecossistema (GetStream) | Familiaridade com vendor; chat no **Dr Clin** (Api.Saúde não usa) — modalidade acoplada ao produto | ➖ **Ganho limitado** — vídeo exige SDKs e módulos novos; chat **não** é capability reutilizável como modelo |
 
-**Nota:** H3 **não** significa estender a integração de chat. GetStream Video (ou qualquer provider) demanda **capability de vídeo net-new** — alinhada à H2 — com contrato próprio de sessão, tokens e clientes. A spike arquitetural (H2) precede e independe da escolha GetStream vs outro provider na fase seguinte.
+**Nota:** H3 **não** significa estender a integração de chat. GetStream Video (ou qualquer provider) demanda **capability de vídeo net-new** — alinhada à H2 — com contrato próprio de sessão, tokens e clientes. O chat do Dr Clin nasceu prevendo vídeo, entregou só mensagens e **acumulou acoplamento** ao produto; videoconsulta na Api.Saúde deve **evitar repetir** esse caminho (§0.1). A spike arquitetural (H2) precede e independe da escolha GetStream vs outro provider na fase seguinte.
 
 ---
 
@@ -412,7 +433,9 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 >
 > **Requisito derivado do desencontro:** distinguir **“participante na sessão”** de **“mídia bidirecional estabelecida”**. A consulta só transita para “ativa” quando ambos os participantes têm stream de áudio/vídeo confirmado — não basta estado de UI ou presença na sala.
 >
-> **H3 esclarecido:** GetStream hoje = **chat**. Vídeo (GetStream ou outro) = SDKs diferentes + módulos novos no backend e frontend — **não** é habilitar função no produto existente. Ganho de H3: familiaridade com vendor e práticas transversais; **não** reduz o escopo da capability H2.
+> **H3 esclarecido:** GetStream hoje = **chat no Dr Clin** (**Api.Saúde não utiliza chat**); modalidade acoplada ao produto — §0.1. Vídeo (GetStream ou outro) = SDKs diferentes + módulos novos no backend e frontend — **não** é habilitar função no produto existente. Ganho de H3: familiaridade com vendor e práticas transversais; **não** reduz o escopo da capability H2.
+>
+> **Lição do Dr Clin:** modalidade realtime acoplada ao produto gera dívida de desacoplamento se vídeo for adicionado depois; videoconsulta Api.Saúde nasce como H2 com contrato estável.
 >
 > **Ainda exige decisão/PoC:** taxa de no-show, confirmação de mídia bidirecional por provider, **grace period C3 (adiado)**, **valores C2 pelo consumidor (adiado)**. **Desencontros do legado:** não serão reproduzidos/investigados em PoC (§11).
 
@@ -432,6 +455,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 | 10 | Valores C2 (`T_lobby`, quem encerra) | Custo, UX lobby | Consumidor (Api.Saúde) | | | ⏸️ **Adiado** — regra do consumidor definida (§0.5) |
 | 7 | Gravação / auditoria no roadmap | Impacto arquitetura cedo | Produto | | | ✅ Fora de escopo (§0.4) |
 | 8 | GetStream / realtime cobre vídeo? | Assumir H3 indevidamente | Produto / engenharia | | | ✅ Resolvido — chat only; vídeo = SDKs + módulos novos (§0.1) |
+| 11 | Vídeo no **Dr Clin** | Refatoração para desacoplar chat seria necessária **somente se** optarem por adicionar vídeo ao Dr Clin — decisão **separada** da Api.Saúde | Produto / engenharia | | | ⏸️ **Condicional** — fora do escopo desta spike |
 
 ---
 
@@ -556,6 +580,7 @@ Somente **após** cumprir [§11 — Definition of Done](#11-definition-of-done--
 | ADR | Título | Status |
 |-----|--------|--------|
 | [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) | Colocação da capability de videoconsulta | Proposto — aceitar ao cumprir §11 |
+| [ADR-002](./docs/adr/ADR-002-implementacao-h2.md) | Implementação H2 (contrato, deploy) | Proposto — ver [SPIKE-H2.md](./SPIKE-H2.md) |
 
 ---
 
@@ -571,7 +596,7 @@ Checklist para **fechar a fase “qual abordagem?”** e **abrir a fase provider
 - [x] C3 — modelo híbrido de reconexão (§3.2.2); grace period adiado
 - [x] Ordem de entrada: paciente pode entrar primeiro (§0.3)
 - [x] Gravação fora de escopo (§0.4)
-- [x] H3 esclarecido: chat GetStream ≠ vídeo
+- [x] H3 esclarecido: chat GetStream ≠ vídeo; histórico de acoplamento do chat documentado (§0.1)
 - [x] Critério reboot: core no legado incompatível (§0.2)
 
 ### B. Regras de produto mínimas (obrigatório antes de encerrar)
@@ -609,6 +634,8 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 
 **Próxima fase:** pesquisa comparativa de providers → PoC da nova capability (§9) → proposta de budget.
 
+**Spike seguinte iniciada:** [SPIKE-H2.md](./SPIKE-H2.md) — como implementar a capability H2 (contrato, deploy, integração).
+
 | Gate | Responsável | Data alvo | Status |
 |------|-------------|-----------|--------|
 | Spike arquitetural encerrada (§11 A+B+C) | | | ⬜ |
@@ -635,3 +662,5 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 | 2026-05-20 | | §11 DoD; PoC exclui validação de desencontros do legado |
 | 2026-05-20 | | C4, migração (reboot), C2 regra do consumidor (§0.5) |
 | 2026-05-20 | | Diagrama de estados (§7) validado |
+| 2026-05-20 | | §0.1 corrigido: refatoração do chat condicional (só se vídeo for adicionado ao Dr Clin) |
+| 2026-05-20 | | §0.1: produto de chat identificado como **Dr Clin** |
