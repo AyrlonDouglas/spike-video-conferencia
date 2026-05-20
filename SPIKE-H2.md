@@ -25,7 +25,17 @@ Não rediscutir — usar como restrições de design.
 
 **Primeiro consumidor:** Api.Saúde rebootada. **Clientes de mídia:** paciente mobile-first (React Native); profissional/backoffice desktop+responsivo (Angular).
 
-**Stack do time (familiaridade):** backend **Node.js / NestJS**; web **Angular**; mobile **React Native** — ver [SPIKE §0.6](./SPIKE.md#familiaridade-do-time-stack). Capability H2 tende a NestJS; consumidor Api.Saúde integra via contrato independente da stack do reboot.
+**Stack do time (familiaridade):** backend **Node.js / NestJS**; web **Angular**; mobile **React Native** — ver [SPIKE §0.6](./SPIKE.md#familiaridade-do-time-stack).
+
+**Decisões levantadas (Q&A H2):**
+
+| Tópico | Resposta | Implicação |
+|--------|----------|------------|
+| Stack Api.Saúde reboot (consumidor) | **Provavelmente** NestJS + Angular + React Native — alinhada ao time | Consumidor e capability podem compartilhar stack; contrato M2M continua necessário |
+| Stack capability H2 | **NestJS** confirmado | §3.2 |
+| Time de plataforma | **Sim** — mas **não** existe produto “plataforma” que sustenta os demais | Time pode **operar** capability dedicada; H2-C como “suite de plataforma” **não** se aplica — ver §2.1 |
+| Backoffice na sala de vídeo | **Não** — sala sempre **1:1** (médico + paciente) | Backoffice = **observabilidade/suporte** fora da sessão de mídia; fora do MVP de join |
+| Auth M2M consumidor | Abordagem validada no mercado; **provavelmente JWT + API keys** | §3.7 — detalhar em workshop segurança |
 
 ---
 
@@ -38,8 +48,8 @@ Não rediscutir — usar como restrições de design.
 | 3 | **Estado:** onde persiste sessão e transições (DB, cache)? | | | 🔴 Aberto |
 | 4 | **Clientes:** como recebem atualizações de estado (poll, SSE, WebSocket)? | | | 🔴 Aberto |
 | 5 | **Provider:** como abstrair Twilio/outro (adapter, webhooks, tokens)? | | | 🔴 Aberto |
-| 6 | **Auth:** como consumidor e participantes autenticam na capability? | | | 🔴 Aberto |
-| 7 | **Front-end:** SDK compartilhado, módulo por app ou integração direta? | | | 🔴 Aberto |
+| 6 | **Auth:** como consumidor e participantes autenticam na capability? | Consumidor: **JWT + API keys** (M2M). Participante: token curto emitido na join — detalhar | Q&A time | 🟡 Parcial |
+| 7 | **Front-end:** SDK compartilhado, módulo por app ou integração direta? | Backoffice **sem join** na sala (só médico + paciente) | Produto | 🟡 Parcial |
 | 8 | **Operação:** deploy, observabilidade, ownership — quem roda o quê? | | | 🔴 Aberto |
 | 9 | **MVP H2:** qual fatia mínima entregável com o reboot? | | | 🔴 Aberto |
 
@@ -51,9 +61,26 @@ Não rediscutir — usar como restrições de design.
 |----|----------|-----------|-----------------|
 | **H2-A** | **Microserviço dedicado** | Serviço `videoconsulta` independente; Api.Saúde consome via HTTP/events | Reuso multi-produto; deploy/evolução independente |
 | **H2-B** | **Módulo / bounded context no reboot** | Capability como serviço ou módulo no mesmo ecossistema de deploy, contrato público interno | Time único no reboot; menos overhead operacional inicial |
-| **H2-C** | **Platform capability compartilhada** | Infra transversal Clin&Co (como **padrão alvo** de modalidade realtime), múltiplos consumidores desde o dia 1 | Forte push de reuso; time de plataforma existe — **chat do Dr Clin hoje não cumpre** esse padrão (acoplado ao produto; Api.Saúde não usa — [SPIKE §0.1](./SPIKE.md#getstream-chat-vs-vídeo-h3)) |
+| **H2-C** | **Platform capability compartilhada** | Capability pensada como **infra transversal** reutilizável — padrão alvo de modalidade realtime | Reuso multi-produto desde o design; **requer** produto/camada de plataforma madura |
 
-**Nota:** H2-A, H2-B e H2-C podem convergir — ex.: começar H2-B com **contrato estável** preparado para extrair H2-A depois. **Lição do Dr Clin:** nascer com contrato consumidor × capability evita refatoração futura se outra modalidade (ex.: vídeo) for adicionada depois ao mesmo produto.
+#### Time de plataforma ≠ produto plataforma (§2.1)
+
+**Contexto levantado:** existe **time de plataforma**, porém **não** existe hoje um **produto “plataforma”** (suite, portal ou backbone único) que sustente Api.Saúde, Dr Clin e demais produtos.
+
+| O que existe | O que **não** existe |
+|--------------|----------------------|
+| Time de plataforma (engenharia transversal) | Produto plataforma unificado |
+| Objetivo de reuso no PRD (H2) | Catálogo maduro de capabilities consumíveis “de prateleira” |
+
+**Implicação para H2-A / B / C:**
+
+- **H2-C (como organização):** pressupõe uma **camada de plataforma** onde capabilities vivem juntas — **premissa fraca** hoje. Não confundir “desenho reutilizável” com “já temos produto plataforma”.
+- **H2-A + ownership plataforma:** candidata **mais realista** — microserviço `videoconsulta` **dedicado**, operado pelo time de plataforma, contrato HTTP/events; Api.Saúde é primeiro consumidor. Reuso via **contrato estável**, não via suite existente.
+- **H2-B:** ainda viável se reboot e capability forem entregues pelo **mesmo programa** com fronteira de contrato clara — risco de parecer “parte da Api.Saúde” e dificultar reuso.
+
+**Leitura recomendada:** buscar **desacoplamento e contrato de H2-C** com **deploy e ownership de H2-A** operado pelo time de plataforma — **híbrido H2-A′** (serviço dedicado, time plataforma, sem produto plataforma pré-existente).
+
+**Nota:** H2-A, H2-B e H2-C podem convergir — ex.: **H2-A′** (serviço dedicado + time plataforma + contrato público interno). **Lição do Dr Clin:** nascer com contrato consumidor × capability evita refatoração futura se outra modalidade for adicionada depois ao mesmo produto.
 
 ---
 
@@ -77,7 +104,7 @@ Não rediscutir — usar como restrições de design.
 | Capability (API, orquestração, adapter) | **NestJS** / Node.js | Familiaridade do time; webhooks e REST/gRPC |
 | Cliente web (profissional, backoffice) | **Angular** | Desktop + responsivo |
 | Cliente mobile (paciente) | **React Native** | Mobile-first; C3 crítico |
-| Consumidor (Api.Saúde reboot) | _A definir_ | Integração M2M — **não** precisa ser NestJS |
+| Consumidor (Api.Saúde reboot) | **NestJS** (provável) + Angular + RN | Mesma stack do time; integração M2M com capability |
 
 **Provider:** avaliar SDK server-side Node + client web/mobile nas stacks acima antes de fixar vendor.
 
@@ -112,7 +139,7 @@ Operações mínimas derivadas do diagrama de estados e C1–C4:
 |---------|-------|-------------|--------|
 | Paciente mobile | **React Native** | Join, estado, reconexão C3 | SDK provider RN + API capability; módulo `@clin/videoconsulta-mobile` |
 | Profissional desktop | **Angular** | Join, veto, estado | SDK provider web + API capability; módulo Angular compartilhado |
-| Backoffice | **Angular** | Visualização / suporte? | A definir — escopo MVP; mesma stack web |
+| Backoffice | **Angular** | **Observabilidade/suporte** — **não entra** na sala de vídeo (máx. 2: médico + paciente) |
 
 **Avaliar:** biblioteca `@clin/videoconsulta-client` (wrappers Angular + RN) vs integração direta provider SDK + capability API only. **Provider sem SDK RN ou web maduro** exige camada extra ou penaliza time-to-MVP.
 
@@ -129,10 +156,10 @@ Operações mínimas derivadas do diagrama de estados e C1–C4:
 
 ### 3.7 Auth e segurança
 
-| Fluxo | A avaliar |
-|-------|-----------|
-| Consumidor → capability | M2M (JWT, API key, mesh) |
-| Participante → join | Token curto emitido pela capability; scoped por sessão/role |
+| Fluxo | Decisão / a detalhar |
+|-------|---------------------|
+| Consumidor → capability | **JWT + API keys** (M2M) — padrão de mercado; validar com segurança/platform |
+| Participante → join | Token curto emitido pela capability; scoped por sessão/role (médico/paciente) |
 | Webhooks provider | Assinatura / secret |
 
 ### 3.8 Observabilidade e operação
@@ -200,7 +227,7 @@ Derivado do reboot + C1–C4. Refinar com o time.
 | 1 provider (escolha em spike/provider) | Multi-provider |
 | Api.Saúde como único consumidor | Self-service multi-tenant consumidores |
 | Anti-desencontro (`mídia_pendente`) | Valores C2 concretos (consumidor define depois) |
-| Web + mobile join | Backoffice avançado |
+| Web + mobile join | Backoffice join na sala (observabilidade fora da mídia) |
 
 ---
 
@@ -208,11 +235,11 @@ Derivado do reboot + C1–C4. Refinar com o time.
 
 | # | Unknown | Impacto | Como validar | Status |
 |---|---------|---------|--------------|--------|
-| 1 | Stack do **consumidor** Api.Saúde reboot (.NET, Node, etc.) | Contrato M2M H2 — **não** exige mesma stack da capability | Engenharia reboot | 🔴 |
-| 1b | Stack da **capability** H2 | NestJS favorecido pela familiaridade do time (§0.6 SPIKE) | Este documento §3.2 | 🟡 Parcial |
-| 2 | Existe time de plataforma / shared services? | H2-A vs H2-C | Organização | 🔴 |
-| 3 | Backoffice precisa join ou só observabilidade? | Escopo cliente Angular | Produto | 🔴 |
-| 4 | Padrão de auth M2M no ecossistema | Integração Api.Saúde | Segurança / platform | 🔴 |
+| 1 | Stack do **consumidor** Api.Saúde reboot | Provavelmente NestJS + Angular + RN — alinhada ao time | Engenharia reboot | 🟡 Parcial |
+| 1b | Stack da **capability** H2 | **NestJS** confirmado | §3.2 | 🟢 Decidido |
+| 2 | Existe time de plataforma / shared services? | **Sim** — time existe; **produto plataforma unificado não** | §2.1 | 🟢 Decidido — inclina **H2-A′** (serviço dedicado operado por plataforma) |
+| 3 | Backoffice precisa join ou só observabilidade? | **Só observabilidade** — sala sempre médico + paciente | Produto | 🟢 Decidido |
+| 4 | Padrão de auth M2M no ecossistema | **JWT + API keys** (provável); detalhar com segurança | Segurança / platform | 🟡 Parcial |
 | 5 | Provider escolhido | Adapter MVP; SDK Node + Angular + RN | Spike provider (paralela) | 🔴 |
 
 ---
@@ -276,3 +303,5 @@ flowchart LR
 |------|-------|-----------|
 | 2026-05-20 | | Criação da spike H2 — como implementar |
 | 2026-05-20 | | §3.2 stack do time: NestJS, Angular, React Native; critérios de provider |
+| 2026-05-20 | | Q&A: consumidor provável NestJS; capability NestJS; time plataforma sim; backoffice sem join; auth JWT+API keys |
+| 2026-05-20 | | §2.1: time plataforma ≠ produto plataforma; inclina H2-A′ (serviço dedicado + ownership plataforma) |
