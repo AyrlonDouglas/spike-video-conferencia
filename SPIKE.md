@@ -475,9 +475,9 @@ Use antes de qualquer PoC: a abordagem escolhida precisa **endereçar explicitam
 
 ---
 
-## 7. Diagrama de estados (rascunho)
+## 7. Diagrama de estados
 
-Preencher e validar com produto/engenharia. Mermaid é editável conforme decisões.
+**Status:** ✅ **Validado** com produto + engenharia (2026-05-20).
 
 ```mermaid
 stateDiagram-v2
@@ -497,12 +497,12 @@ stateDiagram-v2
 
 _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes estão “na chamada” mas sem se ver/ouvir (desencontro)._
 
-**Decisões pendentes no diagrama:**
+**Decisões no diagrama:**
 
 - [x] `MidiaPendente → Ativa`: capability confirma mídia bidirecional (webhooks provider; ver §3.2.1)
 - [x] `Ativa → MidiaPendente` na reconexão: revalidar mídia; preferir mesma room (§3.2.2)
-- [ ] Quem pode transicionar `Aguardando → Encerrada`? — **consumidor** define política C2 (§0.5)
-- [ ] Comportamento ao expirar grace period — **adiado**
+- [x] `Aguardando → Encerrada`: política C2 definida pelo **consumidor** (§0.5)
+- [ ] Comportamento ao expirar grace period — **adiado** (não bloqueia diagrama)
 - [x] `Vetada` impede reentrada do **paciente**; paciente tardio não entra (§0.5)
 
 ---
@@ -513,7 +513,7 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 |------------|--------|-------------|
 | Contexto Q&A documentado (seção 0) | ✅ | |
 | Mapa cenário → requisito → dono (seção 3.1 + 3.4) | 🟡 | C2/C4/migração parcialmente preenchidos (§0.5) |
-| Diagrama de estados validado (seção 7) | ⬜ | |
+| Diagrama de estados validado (seção 7) | ✅ | Validado produto + engenharia |
 | Matriz H1/H2/H3 preenchida (seção 4) | ✅ | H1 rejeitada; H2 direção escolhida |
 | Modelo de custo com variáveis (seção 3.5) | 🟡 | Baseline numérico; falta no-show e custo_minuto |
 | Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | #2–#4, #7, #8 ok ou adiados; #1 parcial; #5–#6 abertos |
@@ -580,7 +580,7 @@ Checklist para **fechar a fase “qual abordagem?”** e **abrir a fase provider
 - [ ] **C2** — valores concretos (`T_lobby`, quem encerra) — **adiado**
 - [x] **C4** — só médico veta; paciente tardio não entra
 - [x] **Migração Twilio** — cutover com reboot; **não** integrar no legado (§0.5)
-- [ ] Diagrama de estados (§7) **validado** com produto + engenharia
+- [x] Diagrama de estados (§7) **validado** com produto + engenharia
 
 ### C. Documentação (obrigatório)
 
@@ -634,3 +634,4 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 | 2026-05-20 | | C3: modelo híbrido de reconexão; grace period adiado (§3.2.2) |
 | 2026-05-20 | | §11 DoD; PoC exclui validação de desencontros do legado |
 | 2026-05-20 | | C4, migração (reboot), C2 regra do consumidor (§0.5) |
+| 2026-05-20 | | Diagrama de estados (§7) validado |

@@ -33,6 +33,7 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 - **C4:** só médico veta; paciente tardio não entra na sala
 - **Migração:** cutover com reboot Api.Saúde; sem integração no legado
 - **C2:** timeout/encerramento = regra do consumidor; valores adiados
+- **Diagrama de estados (§7):** validado
 
 ---
 
