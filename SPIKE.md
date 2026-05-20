@@ -23,6 +23,7 @@ Respostas coletadas que orientam a spike. Atualizar conforme novos dados.
 | Reutilizar solução acoplada atual? | **Não** — time não seguirá por H1 | Acoplamento, reuso inviável, desencontros, **manutenção arriscada** e artifícios técnicos por custo Twilio (§0) |
 | O que é “desencontro”? | Médico e paciente **estão na chamada** (UI/estado indicam conexão), mas **não se veem nem se ouvem** | Falha de **mídia/conectividade**, não só de lobby; exige verificação explícita de par conectado e observabilidade |
 | Reboot da Api.Saúde | Em andamento — videoconsulta é **capability core** | Core no legado **fugiria** da intenção do reboot; vídeo entra no programa via H2 (§0.2) |
+| Quem entra primeiro na sala? | **Paciente pode entrar primeiro** (comportamento atual) — fica aguardando até o médico entrar para iniciar a consulta | Primeiro participante → `aguardando`; segundo → `mídia_pendente`; ver §0.3 |
 
 ### Problema atual (solução acoplada legada)
 
@@ -86,6 +87,23 @@ A Api.Saúde está passando por **reboot** — reconstrução do núcleo do sist
 
 **Implicação:** H2 não é “extra” além do reboot — é como videoconsulta **entra** na nova Api.Saúde: Api.Saúde **consome** a capability via contrato estável; a capability **não** herda o acoplamento legado. Acoplar vídeo monoliticamente dentro da Api.Saúde rebootada (H1) repetiria o padrão que o reboot pretende eliminar.
 
+### Ordem de entrada na sala (C1 / C2)
+
+**Comportamento atual:** o **paciente pode entrar primeiro**. Enquanto o médico não entra, o paciente permanece em **`aguardando`**. A consulta **inicia** quando o médico entra (segundo participante) e a mídia bidirecional é confirmada.
+
+| Fluxo | Sequência | Estado capability |
+|-------|-----------|-------------------|
+| **Atual (comum)** | Paciente entra → aguarda → médico entra → mídia ok → consulta ativa | `aguardando` → `mídia_pendente` → `ativa` |
+| **Alternativo (PRD C1)** | Médico entra → aguarda → paciente entra → mídia ok → consulta ativa | Mesma máquina de estados — ordem de entrada **simétrica** |
+| **C2 — no-show** | Um entra e o outro **não** entra → quem aguarda encerra ou timeout | `aguardando` → `encerrada` |
+
+**Implicações:**
+
+- A máquina de estados **não assume** médico como primeiro participante — `aguardando` = “1 de 2 presentes”.
+- UX mobile (paciente): tela de espera explícita enquanto médico não entra.
+- C2 relevante: **paciente aguardando médico** que não entra (além do inverso).
+- C4: médico encerra após tempo limite mesmo se paciente nunca entrou ou já estava aguardando.
+
 **Ordem de grandeza (baseline):**
 
 ```
@@ -101,7 +119,7 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 | # | Pergunta | Resposta | Evidência | Status |
 |---|----------|----------|-----------|--------|
 | 1 | A capability de vídeo deve viver **acoplada à Api.Saúde** (H1) ou como **serviço/capability compartilhada** (H2)? | **H2 — capability desacoplada**, integrada ao **reboot** da Api.Saúde como consumidor. H1/legado **rejeitados** (§0, §0.2) | Decisão de time + reboot | 🟢 Decidido |
-| 2 | Quem é a **fonte da verdade** do estado da sessão (criada, lobby, ativa, encerrada, vetada)? | _Pendente — inclinação: **backend/capability**, com distinção entre “sessão ativa” e “mídia estabelecida”_ | Desencontro + 3 superfícies de cliente | 🔴 Aberto |
+| 2 | Quem é a **fonte da verdade** do estado da sessão (criada, lobby, ativa, encerrada, vetada)? | **Capability de vídeo (H2)** — orquestra estados e transições. Api.Saúde = negócio da consulta (comandos). Provider = fatos de mídia (webhooks). Clientes **nunca** são fonte da verdade (§3.2.1) | Desencontro + H2 + 3 clientes | 🟢 Decidido |
 | 3 | Reconexão (C3) é **mesma sessão técnica** ou **nova sessão com continuidade de negócio**? | _Pendente — prioridade alta (mobile + desencontros pós-reconexão)_ | Plataformas (§0) + desencontro | 🔴 Aberto |
 | 4 | O que são os **“desencontros”** hoje (sintoma, causa provável, impacto)? | **Sintoma:** médico e paciente na chamada, mas não se veem/ouvem. **Impacto:** consulta inviável. **Causa:** a confirmar no PoC (§0) | Produto / suporte | 🟡 Parcial — sintoma definido |
 | 5 | Quanto de **prática operacional do ecossistema** (H3) se aplica a vídeo 1:1? | **Limitado:** chat GetStream não transfere integração de vídeo — SDKs distintos, módulos backend/frontend novos (§0.1). Reuso: familiaridade com vendor + práticas transversais (auth, observabilidade) | Confirmação engenharia | 🟢 Decidido |
@@ -137,12 +155,57 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 
 | Aspecto | Definição proposta | Risco se mal definido | Decisão |
 |---------|-------------------|------------------------|---------|
-| Estados da sessão | criada → aguardando → **mídia_pendente** → ativa → encerrada → vetada | Desencontros: UI “ativa” sem mídia | Separar estado de negócio de estado de mídia |
-| Quem dispara transições | Capability (backend) como orquestrador | Sessão presa, timeout errado, desencontro | |
-| Idempotência (duplo clique, refresh, 2 abas) | | Duplicidade de participante / salas distintas | |
+| Estados da sessão | criada → aguardando → **mídia_pendente** → ativa → encerrada → vetada | Desencontros: UI “ativa” sem mídia | Capability H2 (§3.2.1) |
+| Quem dispara transições | **Capability (H2)** como orquestrador; Api.Saúde emite comandos de negócio | Sessão presa, timeout errado, desencontro | Capability |
+| Idempotência (duplo clique, refresh, 2 abas) | Capability deduplica entrada por participante/sessão | Duplicidade de participante / salas distintas | Capability |
 | Concorrência (entrada simultânea, reconexão parcial) | N consultas em paralelo; 2 participantes fixos por sessão | Um lado “online”, outro não — **desencontro** | Isolamento por consulta |
-| Correlação consulta ↔ sessão ↔ participante | IDs, logs, traces | Suporte e debug impossíveis | |
-| Verificação mídia estabelecida | Ambos publicando/recebendo áudio e vídeo antes de “consulta ativa” | Desencontro: na chamada mas sem ver/ouvir | **Requisito anti-desencontro** |
+| Correlação consulta ↔ sessão ↔ participante | IDs, logs, traces | Suporte e debug impossíveis | Capability + Api.Saúde |
+| Verificação mídia estabelecida | Capability confirma áudio/vídeo bidirecional antes de `ativa` | Desencontro: na chamada mas sem ver/ouvir | **Requisito anti-desencontro** |
+| Fonte da verdade | **Capability H2** (estado sessão); provider informa fatos de mídia | Estado divergente entre clientes | §3.2.1 |
+
+### 3.2.1 Fonte da verdade do estado da sessão
+
+**Decisão:** a **capability de vídeo (H2)** é a fonte da verdade dos estados `criada`, `aguardando` (lobby), `mídia_pendente`, `ativa`, `encerrada` e `vetada`.
+
+| Papel | Fonte da verdade de… | Papel na sessão de vídeo |
+|-------|----------------------|---------------------------|
+| **Capability de vídeo (H2)** | Estado da sessão e transições | Orquestrador — persiste e expõe estado |
+| **Api.Saúde** | Consulta de negócio (agendada, autorizada, realizada) | Consumidor — emite comandos (`criar sessão`, `encerrar`, `vetar`) |
+| **Provider de mídia** | Fatos técnicos (room, participante conectou, publicou stream) | Informante — webhooks/API reconciliados pela capability |
+| **Clientes** | — | **Nunca** fonte da verdade — apenas refletem estado (poll/SSE/WebSocket) |
+
+**Transições por estado:**
+
+| Estado | Quem dispara |
+|--------|--------------|
+| `criada` | Capability, sob comando da Api.Saúde |
+| `aguardando` | Capability — **primeiro participante** entrou (comportamento atual: frequentemente o paciente) |
+| `mídia_pendente` | Capability — **segundo participante** entrou (consulta “inicia” quando médico entra se paciente já aguardava) |
+| `ativa` | Capability — **mídia bidirecional confirmada** (não basta “na sala”) |
+| `encerrada` | Capability — timeout, abandono ou encerramento normal |
+| `vetada` | Capability — comando da Api.Saúde (regra C4: médico encerra e veta paciente) |
+
+**Anti-desencontro:** `ativa` exige confirmação de áudio/vídeo bidirecional. O provider envia eventos; a **capability decide** a transição `mídia_pendente → ativa`. Preferência: validar via webhooks/API do provider; fallback: sinais do cliente **validados** pela capability contra o provider.
+
+```mermaid
+sequenceDiagram
+    participant AS as Api.Saúde
+    participant VC as Capability vídeo
+    participant PR as Provider mídia
+    participant CL as Clientes
+
+    AS->>VC: criar sessão (consultaId)
+    VC->>PR: criar room / tokens
+    CL->>VC: entrar (token)
+    VC->>CL: estado aguardando
+    PR-->>VC: webhook mídia bidirecional ok
+    VC->>CL: estado ativa
+    AS->>VC: encerrar + vetar (C4)
+    VC->>PR: fechar room
+    VC->>CL: estado vetada
+```
+
+**PoC pendente:** mecanismo exato de confirmação de mídia bidirecional por provider escolhido.
 
 ### 3.3 Colocação arquitetural (H1 vs H2)
 
@@ -160,15 +223,16 @@ _Escala: ❌ = desfavorável · ➖ = neutro · ✅ = favorável._
 
 ### 3.4 Fronteira negócio × capability de vídeo
 
-| Responsabilidade | Dono negócio (consulta/agenda) | Dono capability vídeo | Observação |
-|------------------|-------------------------------|------------------------|------------|
-| Agendamento / slot da consulta | | | |
-| Autorização de entrada (roles) | | | |
-| Limite de duração (~60 min) | | | |
-| Encerramento e veto pós-fim (C4) | | | |
-| Política de reconexão (C3) | | | |
-| Emissão de credenciais/tokens de mídia | | | |
-| Métricas para custo e SLA | | | |
+| Responsabilidade | Dono negócio (Api.Saúde) | Dono capability vídeo (H2) | Observação |
+|------------------|--------------------------|----------------------------|------------|
+| Agendamento / slot da consulta | ✅ | — | |
+| Autorização de entrada (roles) | ✅ regra | ✅ enforce (tokens) | Api.Saúde autoriza; capability emite credencial |
+| Limite de duração (~60 min) | ✅ regra | ✅ enforce técnico | |
+| Encerramento e veto pós-fim (C4) | ✅ regra (médico) | ✅ transição `vetada` | Api.Saúde comanda; capability executa |
+| Política de reconexão (C3) | ✅ regra | ✅ mecanismo | Pendente: mesma sessão vs nova |
+| Emissão de credenciais/tokens de mídia | — | ✅ | |
+| **Estado da sessão (fonte da verdade)** | — | ✅ | Api.Saúde consulta, não possui |
+| Métricas para custo e SLA | ✅ atribuição | ✅ telemetria mídia | |
 
 ### 3.5 Viabilidade financeira (modelo paramétrico)
 
@@ -273,7 +337,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 >
 > **H3 esclarecido:** GetStream hoje = **chat**. Vídeo (GetStream ou outro) = SDKs diferentes + módulos novos no backend e frontend — **não** é habilitar função no produto existente. Ganho de H3: familiaridade com vendor e práticas transversais; **não** reduz o escopo da capability H2.
 >
-> **Ainda exige decisão/PoC:** fonte da verdade de estado, política de reconexão (C3), causa raiz dos desencontros, taxa de no-show, migração Twilio.
+> **Ainda exige decisão/PoC:** política de reconexão (C3), causa raiz dos desencontros, taxa de no-show, migração Twilio, mecanismo de confirmação de mídia bidirecional por provider.
 
 ---
 
@@ -283,7 +347,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 |---|---------|-------------------|--------------|-------------|-------|--------|
 | 1 | Volume: consultas/dia, duração média, no-show | Modelo de custo e capacidade | Dados produto/ops | Produto | | 🟡 Parcial — falta no-show |
 | 2 | Clientes: web, mobile, ambos | Contrato e SDK | Arquitetura frontend | Produto | | ✅ Resolvido (§0) |
-| 3 | Quem inicia a sala (médico primeiro?) | Fluxo C1/C2 | Produto | | | 🔴 Aberto |
+| 3 | Quem inicia a sala (médico primeiro?) | **Paciente pode entrar primeiro** — aguarda médico; ordem simétrica na capability (`aguardando` = 1/2). Consulta inicia quando médico entra + mídia ok (§0.3) | Produto | | | ✅ Resolvido |
 | 4 | Definição operacional de “desencontro” | Prioridade de reconexão/estado | Produto / suporte | | | 🟡 Parcial — sintoma definido; causa raiz pendente |
 | 5 | Compliance (LGPD, retenção, gravação) | Escopo MVP vs roadmap | Jurídico / segurança | | | 🔴 Aberto |
 | 6 | SLA de produto (% reconexão, tempo lobby) | SLIs e arquitetura | Produto + SRE | | | 🔴 Aberto |
@@ -298,7 +362,8 @@ Use antes de qualquer PoC: a abordagem escolhida precisa **endereçar explicitam
 
 ### C1 — Médico e paciente conectados (~60 min)
 
-- [ ] Fluxo: médico entra → aguarda → paciente entra → consulta ativa
+- [ ] Fluxo simétrico: qualquer participante pode ser o primeiro em `aguardando` (atual: **paciente entra primeiro** e aguarda médico — §0.3)
+- [ ] Consulta só `ativa` após segundo participante + mídia bidirecional confirmada
 - [ ] Limite de duração definido (regra + enforcement)
 - [ ] Ambos conseguem encerrar? (definir papel assimétrico se não)
 - [ ] Encerramento limpa estado e métricas
@@ -308,7 +373,7 @@ Use antes de qualquer PoC: a abordagem escolhida precisa **endereçar explicitam
 
 ### C2 — Um lado não entra
 
-- [ ] Estado “aguardando” com timeout configurável
+- [ ] Estado “aguardando” com timeout configurável (inclui **paciente aguardando médico** — fluxo atual)
 - [ ] Quem pode encerrar sem atendimento
 - [ ] Comportamento de sessão órfã (cleanup, billing)
 - [ ] UX clara para o lado que entrou
@@ -355,7 +420,7 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 
 **Decisões pendentes no diagrama:**
 
-- [ ] `MidiaPendente → Ativa`: quem confirma mídia bidirecional (capability vs cliente)?
+- [x] `MidiaPendente → Ativa`: capability confirma mídia bidirecional (webhooks provider; ver §3.2.1)
 - [ ] Quem pode transicionar `Aguardando → Encerrada`?
 - [ ] `Ativa → Ativa` na reconexão: mesma sala ou nova?
 - [ ] `Vetada` impede qualquer reentrada ou só paciente?
@@ -367,11 +432,11 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 | Entregável | Status | Link / nota |
 |------------|--------|-------------|
 | Contexto Q&A documentado (seção 0) | ✅ | |
-| Mapa cenário → requisito → dono (seção 3.1 + 3.4) | ⬜ | C1 parcialmente preenchido |
+| Mapa cenário → requisito → dono (seção 3.1 + 3.4) | 🟡 | Fronteira negócio × vídeo parcialmente preenchida |
 | Diagrama de estados validado (seção 7) | ⬜ | |
 | Matriz H1/H2/H3 preenchida (seção 4) | ✅ | H1 rejeitada; H2 direção escolhida |
 | Modelo de custo com variáveis (seção 3.5) | 🟡 | Baseline numérico; falta no-show e custo_minuto |
-| Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | #1 parcial; #2, #8 resolvidos; #4 parcial |
+| Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | #2, #3, #8 resolvidos; #1 e #4 parciais |
 | ADR de colocação arquitetural | ⬜ | Ver [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) |
 | Lista do que o PoC futuro deve provar | ⬜ | Ver seção 9 |
 
@@ -410,3 +475,5 @@ Somente **após** fechar critérios acima — não antecipar provider.
 | 2026-05-20 | | H3: GetStream vídeo ≠ chat; SDKs distintos; módulos backend/frontend novos |
 | 2026-05-20 | | H1: manutenção arriscada; artifícios técnicos por custo Twilio documentados |
 | 2026-05-20 | | Critério reboot Api.Saúde: capability core via H2, não no legado (§0.2) |
+| 2026-05-20 | | Fonte da verdade: capability H2 orquestra estado; Api.Saúde = negócio (§3.2.1) |
+| 2026-05-20 | | Ordem de entrada: paciente pode entrar primeiro; aguarda médico (§0.3) |

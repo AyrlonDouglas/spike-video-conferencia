@@ -25,7 +25,8 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 - Realtime do ecossistema (GetStream): **apenas chat** — vídeo usa **SDKs diferentes** e exige módulos novos no backend e frontend (não é habilitar feature)
 - **H1 rejeitada:** legado acoplado — acoplamento, desencontros, manutenção arriscada, artifícios Twilio; **incompatível com reboot**
 - **Desencontro:** médico e paciente na chamada, mas sem se ver/ouvir (falha de mídia, não só de lobby)
-- **Reboot:** videoconsulta entra na nova arquitetura via H2; Api.Saúde = negócio; capability = sessão/mídia
+- **Estado da sessão:** capability H2 = fonte da verdade; Api.Saúde = consulta de negócio; provider = fatos de mídia
+- **Ordem de entrada:** paciente pode entrar primeiro; aguarda médico; capability trata ordem como simétrica (`aguardando` = 1/2)
 
 ---
 
@@ -35,7 +36,7 @@ Cenários críticos: conexão e consulta (~60 min), no-show, reconexão, encerra
 
 **Abordagem escolhida:** ~~H1 — Acoplada à Api.Saúde~~ · **H2 — Capability desacoplada** · ⬜ Híbrida — _descrever_
 
-**Fonte da verdade do estado da sessão:** _Pendente — inclinação: capability dedicada, com distinção sessão ativa vs mídia estabelecida_
+**Fonte da verdade do estado da sessão:** **Capability de vídeo (H2)** — estados `criada` → `aguardando` → `mídia_pendente` → `ativa` → `encerrada` / `vetada`. Api.Saúde orquestra negócio e emite comandos; provider informa fatos de mídia via webhooks; clientes nunca são fonte da verdade. Ver [SPIKE.md §3.2.1](../../SPIKE.md).
 
 **Política de reconexão (C3):** _mesma sessão técnica / nova sessão com continuidade de negócio — pendente_
 
@@ -63,11 +64,14 @@ Referência completa: [SPIKE.md — seções 3 e 4](../../SPIKE.md).
 
 ### Positivas
 
-- _Listar após decisão_
+- Estado de sessão centralizado na capability — reduz desencontros entre 3 clientes
+- Fronteira clara: Api.Saúde (negócio) vs capability (sessão/mídia) vs provider (fatos técnicos)
+- `mídia_pendente` separa “na sala” de “consulta ativa” — mitiga desencontro documentado
 
 ### Negativas / trade-offs aceitos
 
-- _Listar após decisão_
+- Capability adicional para operar e evoluir (vs monolito)
+- PoC necessário para confirmação de mídia bidirecional por provider
 
 ### Follow-ups
 
@@ -84,7 +88,8 @@ Referência completa: [SPIKE.md — seções 3 e 4](../../SPIKE.md).
 | **H1 — Acoplada à Api.Saúde / legado** | Acoplamento; desencontros; manutenção arriscada; artifícios Twilio; **core no legado incompatível com reboot da Api.Saúde** |
 | H2 — _se rejeitada_ | |
 | Manter videoconsulta no legado durante reboot | Contradiz intenção do reboot; nova Api.Saúde continuaria dependente da base obsoleta |
-| Reutilizar solução acoplada atual | Mesmos problemas de H1 |
+| Estado de sessão no cliente ou só no provider | Cliente = desencontros; provider = não conhece regras C4/veto |
+| Api.Saúde como fonte da verdade de sessão de vídeo | Repete acoplamento H1; mistura negócio com mídia |
 
 ---
 
