@@ -2,7 +2,7 @@
 
 > **Objetivo:** definir **como** construir e operar a capability desacoplada de videoconsulta (H2) — contrato, colocação, integração com consumidores e clientes. **Não** é spike de provider (Twilio vs GetStream vs outros); isso vem após ou em paralelo controlado.
 >
-> **Pré-requisitos:** [SPIKE.md](./SPIKE.md) (decisões arquiteturais) · [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md)
+> **Pré-requisitos:** [SPIKE.md](./SPIKE.md) (decisões arquiteturais) · [GLOSSARIO.md](./GLOSSARIO.md) · [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md)
 
 ---
 
@@ -43,14 +43,14 @@ Não rediscutir — usar como restrições de design.
 
 | # | Pergunta | Resposta | Evidência | Status |
 |---|----------|----------|-----------|--------|
-| 1 | **Colocação:** serviço dedicado, módulo deployável ou biblioteca compartilhada? | | | 🔴 Aberto |
-| 2 | **Contrato:** quais APIs/comandos a capability expõe aos consumidores? | | | 🔴 Aberto |
+| 1 | **Colocação:** serviço dedicado, módulo deployável ou biblioteca compartilhada? | **Inclinação H2-A′** — microserviço NestJS dedicado, operado pelo time plataforma; H2-C descartado como org.; H2-B/híbrido só se prazo reboot inviabilizar A′ | §2.2, §3.1 | 🟡 Parcial — confirmar em workshop |
+| 2 | **Contrato:** quais APIs/comandos a capability expõe aos consumidores? | Operações §3.3; **fluxo JoinSession:** inclinação **cliente → Api.Saúde → capability** (comandos negócio sempre via consumidor) | §3.3, §3.3.1 | 🟡 Parcial |
 | 3 | **Estado:** onde persiste sessão e transições (DB, cache)? | | | 🔴 Aberto |
 | 4 | **Clientes:** como recebem atualizações de estado (poll, SSE, WebSocket)? | | | 🔴 Aberto |
-| 5 | **Provider:** como abstrair Twilio/outro (adapter, webhooks, tokens)? | | | 🔴 Aberto |
+| 5 | **Provider:** como abstrair Twilio/outro (adapter, webhooks, tokens)? | `IVideoProvider` + vendor em [SPIKE-PROVIDER §7](./SPIKE-PROVIDER.md#7-interface-ivideoprovider-rascunho); decisão vendor em [ADR-003](./docs/adr/ADR-003-provider-videoconsulta.md) | SPIKE-PROVIDER | 🟡 Parcial — PoC pendente |
 | 6 | **Auth:** como consumidor e participantes autenticam na capability? | Consumidor: **JWT + API keys** (M2M). Participante: token curto emitido na join — detalhar | Q&A time | 🟡 Parcial |
 | 7 | **Front-end:** SDK compartilhado, módulo por app ou integração direta? | Backoffice **sem join** na sala (só médico + paciente) | Produto | 🟡 Parcial |
-| 8 | **Operação:** deploy, observabilidade, ownership — quem roda o quê? | | | 🔴 Aberto |
+| 8 | **Operação:** deploy, observabilidade, ownership — quem roda o quê? | **H2-A′:** time plataforma opera capability; time Api.Saúde reboot integra como consumidor | §2.2, §3.8 | 🟡 Parcial — confirma com colocação |
 | 9 | **MVP H2:** qual fatia mínima entregável com o reboot? | | | 🔴 Aberto |
 
 ---
@@ -59,7 +59,7 @@ Não rediscutir — usar como restrições de design.
 
 | ID | Hipótese | Descrição | Quando favorece |
 |----|----------|-----------|-----------------|
-| **H2-A** | **Microserviço dedicado** | Serviço `videoconsulta` independente; Api.Saúde consome via HTTP/events | Reuso multi-produto; deploy/evolução independente |
+| **H2-A′** | **H2-A + time plataforma** — microserviço NestJS dedicado operado por plataforma; contrato M2M | Reuso + ownership; **inclinação atual** (§2.2) |
 | **H2-B** | **Módulo / bounded context no reboot** | Capability como serviço ou módulo no mesmo ecossistema de deploy, contrato público interno | Time único no reboot; menos overhead operacional inicial |
 | **H2-C** | **Platform capability compartilhada** | Capability pensada como **infra transversal** reutilizável — padrão alvo de modalidade realtime | Reuso multi-produto desde o design; **requer** produto/camada de plataforma madura |
 
@@ -82,20 +82,58 @@ Não rediscutir — usar como restrições de design.
 
 **Nota:** H2-A, H2-B e H2-C podem convergir — ex.: **H2-A′** (serviço dedicado + time plataforma + contrato público interno). **Lição do Dr Clin:** nascer com contrato consumidor × capability evita refatoração futura se outra modalidade for adicionada depois ao mesmo produto.
 
+#### Trade-offs de colocação (§2.2)
+
+Comparativo para fechar pergunta **#1**. Escala nas matrizes §3.1: **Forte** / **Médio** / **Fraco**. H2-A′ = H2-A + ownership do time plataforma.
+
+| Opção | O que é | Principais vantagens | Principais trade-offs |
+|-------|---------|---------------------|----------------------|
+| **H2-A′** | Microserviço NestJS `videoconsulta`; deploy próprio; time plataforma opera; Api.Saúde consome M2M | Reuso multi-produto; ownership claro; deploy independente; alinhado à lição Dr Clin; encaixa org. (time plataforma **sem** produto plataforma) | Mais setup (repo, CI/CD, observabilidade); overhead SRE; coordenação entre times; contrato precisa ser disciplinado desde o MVP |
+| **H2-B** | Módulo/bounded context no mesmo deploy/programa do reboot Api.Saúde | Time-to-MVP mais rápido; menos bootstrap SRE; mesmo release train no cutover | Reuso frágil; risco de acoplamento (padrão Dr Clin); deploy acoplado; ownership confuso; extração futura cara |
+| **H2-C** | Capability em camada “produto plataforma” Clin&Co | Melhor reuso conceitual; governança centralizada | **Premissa fraca hoje** (sem produto plataforma); over-engineering para ~20/dia; na prática converge para A′ |
+| **Híbrido B→A′** | Módulo no reboot no MVP; extrair serviço depois | Velocidade no go-live; contrato amadurece com uso | Dívida técnica; reuso adiado; risco de refatoração que não acontece; dois big-bangs |
+
+**Recomendação (pendente confirmação em workshop):** **H2-A′** — alinhada ao PRD (reuso), time plataforma existente e §2.1. Escolher **H2-B** ou **híbrido** somente se prazo do reboot **inviabilizar** serviço dedicado no MVP; nesse caso, usar critérios §2.3.
+
+**H2-C:** manter apenas como **princípio de design** (contrato reutilizável), não como opção organizacional distinta.
+
+#### Critérios de extração — se H2-B ou Híbrido (§2.3)
+
+Aplicável **somente** se pergunta #1 fechar em H2-B ou híbrido. Objetivo: evitar “refatoração someday” sem critério (lição Dr Clin).
+
+| Critério de extração | Gatilho |
+|---------------------|---------|
+| Segundo consumidor confirmado | Outro produto Clin&Co (ex.: Dr Clin) precisa integrar videoconsulta |
+| Deploy acoplado bloqueia correção | Hotfix de vídeo exige redeploy da Api.Saúde inteira com frequência inaceitável |
+| Ownership disputado | Incidentes de sessão/mídia sem dono claro entre produto e plataforma |
+| Prazo acordado | Data alvo documentada no programa de reboot (ex.: +N meses pós go-live) |
+
+**Pré-requisitos antes da extração:**
+
+- Contrato HTTP interno **já público** (operações §3.3) — zero import direto entre módulos
+- Persistência de sessão em boundary isolável (schema/DB separável)
+- Auth M2M consumidor já implementado (mesmo que in-process vire rede)
+- Owner da extração: **time plataforma**
+
+**Entregável na decisão B/híbrido:** data alvo ou gatilho + owner + checklist acima assinados no ADR-002.
+
 ---
 
 ## 3. Dimensões de avaliação
 
 ### 3.1 Colocação e deploy
 
-| Critério | Peso (1–3) | H2-A | H2-B | H2-C | Notas |
-|----------|------------|------|------|------|-------|
-| Reuso entre produtos Clin&Co | 3 | | | | Objetivo do PRD |
-| Time-to-MVP com reboot | 3 | | | | ~20 consultas/dia |
-| Deploy independente | 2 | | | | |
-| Overhead operacional (SRE) | 2 | | | | |
-| Clareza de ownership | 2 | | | | |
-| Aderência à stack do time (NestJS, Angular, RN) | 2 | | | | [SPIKE §0.6](./SPIKE.md#familiaridade-do-time-stack) |
+| Critério | Peso (1–3) | H2-A′ | H2-B | H2-C | Híbrido | Notas |
+|----------|------------|-------|------|------|---------|-------|
+| Reuso entre produtos Clin&Co | 3 | Forte | Fraco | Forte* | Fraco→Médio | Objetivo do PRD |
+| Time-to-MVP com reboot | 3 | Médio | Forte | Fraco | Forte→Médio | ~20 consultas/dia |
+| Deploy independente | 2 | Forte | Fraco | Forte | Fraco→Forte | |
+| Overhead operacional (SRE) | 2 | Médio | Forte | Fraco** | Médio | |
+| Clareza de ownership | 2 | Forte | Fraco | Forte* | Fraco | Time plataforma |
+| Aderência à stack do time (NestJS, Angular, RN) | 2 | Forte | Forte | — | Forte | [SPIKE §0.6](./SPIKE.md#familiaridade-do-time-stack) |
+
+\* H2-C só com produto plataforma — **não é o caso hoje** (§2.1)  
+\*\* H2-C barato depois de construído, mas **custo de criar plataforma** é alto
 
 ### 3.2 Stack e implementação
 
@@ -123,6 +161,40 @@ Operações mínimas derivadas do diagrama de estados e C1–C4:
 | Webhooks provider | Provider → capability | Eventos de mídia; drive `mídia_pendente` → `ativa` |
 
 **Avaliar:** REST vs gRPC; sync vs eventos de domínio; versionamento do contrato.
+
+#### Fluxo JoinSession — quem chama o quê (§3.3.1)
+
+Pergunta **#2** derivada: clientes Angular/RN falam com capability **direto** ou **sempre via Api.Saúde**?
+
+| Opção | Fluxo | Vantagens | Trade-offs |
+|-------|-------|-----------|------------|
+| **A — Via Api.Saúde (BFF)** | Cliente → Api.Saúde → capability (`JoinSession`); Api.Saúde devolve credenciais provider + estado | Auth de usuário centralizada no consumidor; clientes só conhecem Api.Saúde; alinhado a C2/C4 no negócio | Latência extra; Api.Saúde no caminho crítico de join/reconexão |
+| **B — Direto na capability** | Cliente obtém **join token** curto (via Api.Saúde) → chama capability direto | Menor latência; menos carga no consumidor em reconexão C3 | Clientes precisam de SDK/config capability; auth participante mais complexa |
+| **C — Híbrido (inclinação)** | **Comandos negócio** (`Create`, `End`, `Veto`, `ConfigureLobby`) sempre consumidor → capability M2M; **Join** cliente → Api.Saúde → capability no MVP; sync estado via Api.Saúde ou SSE capability (decidir em #4) | Separa negócio (Api.Saúde) de sessão/mídia (capability); MVP mais simples para clientes | Definir evolução para join direto se C3/latência exigir |
+
+**Recomendação (pendente confirmação):** **Opção C** no MVP — join via Api.Saúde; reavaliar join direto na capability após PoC C3 mobile.
+
+**Sequência alvo (MVP, opção C):**
+
+```mermaid
+sequenceDiagram
+    participant AS as ApiSaude
+    participant VC as Capability
+    participant CL as ClienteAngularRN
+    participant PR as Provider
+
+    AS->>VC: CreateSession M2M
+    CL->>AS: Solicitar entrada consulta
+    AS->>VC: JoinSession M2M
+    VC->>PR: Criar room token
+    VC-->>AS: Credenciais join estado
+    AS-->>CL: Credenciais provider
+    CL->>PR: Estabelecer midia WebRTC
+    PR->>VC: Webhooks midia
+    VC->>VC: midia_pendente to ativa
+```
+
+---
 
 ### 3.4 Persistência e consistência
 
@@ -212,7 +284,7 @@ flowchart TB
     ADP --> PR
 ```
 
-_Preencher e ajustar conforme hipótese H2-A/B/C escolhida._
+_Preencher e ajustar conforme hipótese escolhida — **inclinação H2-A′** (serviço dedicado; time plataforma opera; clientes join via Api.Saúde no MVP)._
 
 ---
 
@@ -240,7 +312,9 @@ Derivado do reboot + C1–C4. Refinar com o time.
 | 2 | Existe time de plataforma / shared services? | **Sim** — time existe; **produto plataforma unificado não** | §2.1 | 🟢 Decidido — inclina **H2-A′** (serviço dedicado operado por plataforma) |
 | 3 | Backoffice precisa join ou só observabilidade? | **Só observabilidade** — sala sempre médico + paciente | Produto | 🟢 Decidido |
 | 4 | Padrão de auth M2M no ecossistema | **JWT + API keys** (provável); detalhar com segurança | Segurança / platform | 🟡 Parcial |
-| 5 | Provider escolhido | Adapter MVP; SDK Node + Angular + RN | Spike provider (paralela) | 🔴 |
+| 5 | Provider escolhido | **Inclinação:** GetStream Video (P0); PoC vs LiveKit Cloud | [SPIKE-PROVIDER](./SPIKE-PROVIDER.md) | 🟡 Parcial — PoC pendente |
+| 6 | Colocação H2-A′ vs B vs híbrido | **Inclinação H2-A′** — §2.2, §3.1 | Workshop stakeholders | 🟡 Parcial |
+| 7 | Fluxo JoinSession (cliente direto vs via Api.Saúde) | **Inclinação híbrido C** — join via Api.Saúde no MVP | §3.3.1 | 🟡 Parcial |
 
 ---
 
@@ -281,7 +355,7 @@ Itens **A** + **B** completos → iniciar desenvolvimento da capability no progr
 ```mermaid
 flowchart LR
     S1[SPIKE.md\nColocação H2] --> S2[SPIKE-H2.md\nComo implementar]
-    S2 --> SP[Spike provider]
+    S2 --> SP[SPIKE-PROVIDER.md]
     S2 --> DEV[Implementação reboot]
     SP --> POC[PoC mídia C1-C4]
     POC --> DEV
@@ -291,9 +365,10 @@ flowchart LR
 |------|-----------|
 | Colocação arquitetural | [SPIKE.md](./SPIKE.md) |
 | **Implementação H2** | **Este documento** |
-| Provider | _A criar_ |
+| Provider | [SPIKE-PROVIDER.md](./SPIKE-PROVIDER.md) |
 | ADR colocação | [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) |
 | ADR implementação | [ADR-002](./docs/adr/ADR-002-implementacao-h2.md) |
+| ADR provider | [ADR-003](./docs/adr/ADR-003-provider-videoconsulta.md) |
 
 ---
 
@@ -305,3 +380,6 @@ flowchart LR
 | 2026-05-20 | | §3.2 stack do time: NestJS, Angular, React Native; critérios de provider |
 | 2026-05-20 | | Q&A: consumidor provável NestJS; capability NestJS; time plataforma sim; backoffice sem join; auth JWT+API keys |
 | 2026-05-20 | | §2.1: time plataforma ≠ produto plataforma; inclina H2-A′ (serviço dedicado + ownership plataforma) |
+| 2026-05-20 | | §2.2 trade-offs colocação; §3.1 matriz; §2.3 critérios extração B/híbrido |
+| 2026-05-20 | | §3.3.1 fluxo JoinSession; inclinação join via Api.Saúde no MVP |
+| 2026-05-21 | | §8: link SPIKE-PROVIDER + ADR-003; pergunta #5 / unknown provider parcial |

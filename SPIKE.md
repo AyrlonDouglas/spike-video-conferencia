@@ -2,7 +2,7 @@
 
 > **Objetivo desta spike:** definir critérios e evidências para escolher a **abordagem arquitetural** (não o provider/stack). Pesquisa de soluções e PoCs técnicos ficam para uma fase posterior.
 >
-> **Referência:** [PRD.md](./PRD.md) · **Próxima fase:** [SPIKE-H2.md](./SPIKE-H2.md) (como implementar H2)
+> **Referência:** [PRD.md](./PRD.md) · [GLOSSARIO.md](./GLOSSARIO.md) (siglas e termos) · **Fases seguintes:** [SPIKE-H2.md](./SPIKE-H2.md) (implementação) · [SPIKE-PROVIDER.md](./SPIKE-PROVIDER.md) (provider de mídia)
 
 ---
 
@@ -612,6 +612,7 @@ Somente **após** cumprir [§11 — Definition of Done](#11-definition-of-done--
 |-----|--------|--------|
 | [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md) | Colocação da capability de videoconsulta | Proposto — aceitar ao cumprir §11 |
 | [ADR-002](./docs/adr/ADR-002-implementacao-h2.md) | Implementação H2 (contrato, deploy) | Proposto — ver [SPIKE-H2.md](./SPIKE-H2.md) |
+| [ADR-003](./docs/adr/ADR-003-provider-videoconsulta.md) | Provider de mídia | Proposto — ver [SPIKE-PROVIDER.md](./SPIKE-PROVIDER.md) |
 
 ---
 
@@ -647,7 +648,7 @@ Checklist para **fechar a fase “qual abordagem?”** e **abrir a fase provider
 ### D. Pode paralelizar (não bloqueia encerramento)
 
 - [ ] Taxa de no-show (`P_no_show`) — modelo de custo §3.5
-- [ ] Proposta de custo com `custo_minuto` do provider escolhido
+- [x] Proposta de custo com `custo_minuto` do provider — estimativa baseline em [SPIKE-PROVIDER §5](./SPIKE-PROVIDER.md#5-modelo-de-custo-paramétrico) (validar pós-PoC)
 - [ ] Compliance LGPD / retenção de metadados e logs (#5)
 - [ ] SLA numérico (#6) — grace period adiado
 - [ ] Runbooks operacionais (§3.6)
@@ -665,13 +666,14 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 
 **Próxima fase:** pesquisa comparativa de providers → PoC da nova capability (§9) → proposta de budget.
 
-**Spike seguinte iniciada:** [SPIKE-H2.md](./SPIKE-H2.md) — como implementar a capability H2 (contrato, deploy, integração).
+**Spikes seguintes:** [SPIKE-H2.md](./SPIKE-H2.md) (implementação) · [SPIKE-PROVIDER.md](./SPIKE-PROVIDER.md) (provider — **iniciada**)
 
 | Gate | Responsável | Data alvo | Status |
 |------|-------------|-----------|--------|
 | Spike arquitetural encerrada (§11 A+B+C) | | | ⬜ |
-| Provider escolhido | | | ⬜ |
-| PoC mínimo concluído (§9) | | | ⬜ |
+| Spike provider (desk research) | | 2026-05-21 | ✅ [SPIKE-PROVIDER.md](./SPIKE-PROVIDER.md) |
+| Provider escolhido (ADR-003 Aceito) | | | 🟡 Inclinação GetStream — PoC pendente |
+| PoC mínimo concluído (§9) | | | ⬜ — ver [docs/poc/PLANO-POC-PROVIDER.md](./docs/poc/PLANO-POC-PROVIDER.md) |
 | Budget validado com stakeholders | | | ⬜ |
 
 ---
@@ -695,4 +697,5 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 | 2026-05-20 | | Diagrama de estados (§7) validado |
 | 2026-05-20 | | §0.1 corrigido: refatoração do chat condicional (só se vídeo for adicionado ao Dr Clin) |
 | 2026-05-20 | | §0.1: produto de chat identificado como **Dr Clin** |
+| 2026-05-21 | | SPIKE-PROVIDER iniciada; ADR-003; gate provider desk research |
 | 2026-05-20 | | §0.6: familiaridade do time — Node/NestJS, Angular, React Native; critérios para pesquisa de provider |

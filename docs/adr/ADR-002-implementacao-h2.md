@@ -19,21 +19,25 @@ A [spike de colocação](./ADR-001-colocacao-videoconsulta.md) decidiu **H2 — 
 
 ## Decisão
 
-> _Preencher ao final da spike H2._
+> _Spike H2 em andamento — inclinações documentadas em [SPIKE-H2 §2.2 e §3.3.1](../../SPIKE-H2.md); confirmar em workshop._
 
-**Colocação:** ⬜ H2-A Microserviço · ⬜ H2-B Módulo no reboot · ⬜ H2-C Platform shared · ⬜ Híbrido — _descrever_
+**Colocação:** ⬜ H2-A′ Microserviço + time plataforma **(inclinação)** · ⬜ H2-B Módulo no reboot · ~~H2-C Platform shared~~ · ⬜ Híbrido B→A′ — _ver §2.3 se B/híbrido_
 
-**Contrato consumidor:** _REST / gRPC / events — link spec_
+**Contrato consumidor:** REST (provável) — operações [SPIKE-H2 §3.3](../../SPIKE-H2.md#33-contrato-da-capability-rascunho-para-avaliar)
+
+**Fluxo JoinSession (MVP):** cliente → **Api.Saúde** → capability _(inclinação §3.3.1)_
 
 **Persistência de sessão:** _descrever_
 
-**Sync estado → clientes:** _poll / SSE / WebSocket_
+**Sync estado → clientes:** _poll / SSE / WebSocket — pergunta #4_
 
-**Provider adapter:** _interface + vendor MVP_
+**Provider adapter:** `IVideoProvider` — [SPIKE-PROVIDER §7](../../SPIKE-PROVIDER.md#7-interface-ivideoprovider-rascunho). **Vendor MVP (provisório):** GetStream Video (P0) — confirmar via PoC; plan B Daily; ver [ADR-003](./ADR-003-provider-videoconsulta.md)
 
-**Auth:** _consumidor M2M; participante join token_
+**Auth:** consumidor **JWT + API keys** M2M; participante join token curto _(detalhar)_
 
-**Escopo MVP:** _link SPIKE-H2 §5_
+**Escopo MVP:** [SPIKE-H2 §5](../../SPIKE-H2.md#5-mvp-h2--fatia-mínima-proposta-inicial)
+
+**Ownership (H2-A′):** time **plataforma** opera capability; time **Api.Saúde reboot** integra consumidor
 
 ---
 
@@ -41,15 +45,19 @@ A [spike de colocação](./ADR-001-colocacao-videoconsulta.md) decidiu **H2 — 
 
 ### Positivas
 
-- _Listar após decisão_
+- H2-A′ preserva reuso multi-produto alinhado ao PRD sem exigir produto plataforma existente
+- Join via Api.Saúde no MVP simplifica auth dos clientes Angular/RN
 
 ### Negativas / trade-offs aceitos
 
-- _Listar após decisão_
+- Setup inicial de serviço dedicado (CI/CD, observabilidade, on-call plataforma)
+- Latência adicional no join enquanto fluxo passar pela Api.Saúde
+- Confirmação formal de colocação e fluxo ainda pendente
 
 ### Follow-ups
 
-- [ ] Spike provider (escolha de vendor)
+- [x] Spike provider iniciada — [SPIKE-PROVIDER.md](../../SPIKE-PROVIDER.md) · [ADR-003](./ADR-003-provider-videoconsulta.md)
+- [ ] PoC provider (§6 SPIKE-PROVIDER) — gate para adapter em produção
 - [ ] PoC §9 [SPIKE.md](../../SPIKE.md)
 - [ ] Backlog de implementação no reboot Api.Saúde
 
@@ -59,7 +67,9 @@ A [spike de colocação](./ADR-001-colocacao-videoconsulta.md) decidiu **H2 — 
 
 | Alternativa | Motivo |
 |-------------|--------|
-| | |
+| **H2-C — produto plataforma** | Não existe produto plataforma unificado hoje ([SPIKE-H2 §2.1](../../SPIKE-H2.md)) |
+| **H2-B sem plano de extração** | Risco de acoplamento (lição Dr Clin); só aceitável com §2.3 |
+| **Join direto cliente→capability no MVP** | Adiado — inclinação join via Api.Saúde primeiro (§3.3.1) |
 
 ---
 
