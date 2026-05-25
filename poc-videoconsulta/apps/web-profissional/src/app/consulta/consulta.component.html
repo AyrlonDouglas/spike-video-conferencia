@@ -1,0 +1,68 @@
+<main class="page">
+  <header>
+    <a routerLink="/">← Voltar</a>
+    <h1>Videoconsulta — {{ role() === 'medico' ? 'Médico' : 'Paciente' }}</h1>
+    <p>Sessão: {{ sessionId() }}</p>
+  </header>
+
+  <section class="status" [class.active]="isActive()">
+    <strong>{{ stateLabel() }}</strong>
+    @if (!isActive()) {
+      <span class="hint">A consulta só fica ativa após mídia bidirecional confirmada pelo orquestrador.</span>
+    }
+  </section>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (loading()) {
+    <p>Conectando…</p>
+  }
+
+  <audio #remoteAudio autoplay playsinline hidden></audio>
+
+  <div class="videos">
+    <div>
+      <h2>Você</h2>
+      <video
+        #localVideo
+        autoplay
+        playsinline
+        muted
+        [class.video-off]="connected() && !cameraEnabled()"
+      ></video>
+    </div>
+    <div>
+      <h2>Remoto</h2>
+      <video #remoteVideo autoplay playsinline></video>
+    </div>
+  </div>
+
+  @if (connected()) {
+    <section class="controls" aria-label="Controles de mídia">
+      <button
+        type="button"
+        class="control"
+        [class.off]="!micEnabled()"
+        (click)="toggleMic()"
+        [attr.aria-pressed]="micEnabled()"
+      >
+        {{ micEnabled() ? 'Silenciar microfone' : 'Ativar microfone' }}
+      </button>
+      <button
+        type="button"
+        class="control"
+        [class.off]="!cameraEnabled()"
+        (click)="toggleCamera()"
+        [attr.aria-pressed]="cameraEnabled()"
+      >
+        {{ cameraEnabled() ? 'Desligar câmera' : 'Ligar câmera' }}
+      </button>
+    </section>
+  }
+
+  @if (role() === 'medico') {
+    <button type="button" class="end-btn" (click)="endConsultation()">Encerrar consulta</button>
+  }
+</main>

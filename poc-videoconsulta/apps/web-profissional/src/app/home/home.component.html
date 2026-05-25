@@ -1,0 +1,30 @@
+<main class="page">
+  <h1>PoC LiveKit — Profissional</h1>
+  <p>Crie uma sessão de videoconsulta ou entre com o ID da sessão.</p>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <section>
+    <button type="button" [disabled]="loading()" (click)="createSession()">
+      {{ loading() ? 'Criando…' : 'Nova consulta' }}
+    </button>
+  </section>
+
+  <section class="join">
+    <label>
+      ID da sessão
+      <input
+        type="text"
+        [value]="sessionIdInput()"
+        (input)="sessionIdInput.set(($any($event.target)).value)"
+        placeholder="uuid da sessão"
+      />
+    </label>
+    <div class="join-actions">
+      <button type="button" (click)="joinExisting('medico')">Entrar como médico</button>
+      <button type="button" (click)="joinExisting('paciente')">Entrar como paciente</button>
+    </div>
+  </section>
+</main>
