@@ -10,7 +10,7 @@
 | P3 — UI não mostra ativa sem P2     | Sim   |       |
 | P4 — Rejoin C3 (Expo)               | Sim   |       |
 | P5 — Rejoin bloqueado após encerrar | Sim   |       |
-| P6 — Sem sessão órfã                |       |       |
+| P6 — Sem sessão órfã                | Sim   |       |
 
 
 ## Evidências
