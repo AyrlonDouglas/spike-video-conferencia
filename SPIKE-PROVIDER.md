@@ -2,7 +2,7 @@
 
 > **Objetivo:** definir **qual caminho de mídia 1:1** adotar no MVP — CPaaS gerenciado (**P0**), infra própria SFU self-host (**P1**) ou WebRTC in-house (**P2**) — no modelo H2 (capability orquestra estado; camada de mídia informa fatos), com evidência de desk research + PoC.
 >
-> **Pré-requisitos:** [SPIKE.md](./SPIKE.md) (decisões arquiteturais) · [SPIKE-H2.md](./SPIKE-H2.md) (implementação) · [GLOSSARIO.md](./GLOSSARIO.md) · [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md)
+> **Pré-requisitos:** [SPIKE.md](./SPIKE.md) (decisões arquiteturais) · [SPIKE-H2.md](./SPIKE-H2.md) (implementação) · [Resumo executivo](./docs/SPIKE-RESUMO-EXECUTIVO.md) · [GLOSSARIO.md](./GLOSSARIO.md) · [ADR-001](./docs/adr/ADR-001-colocacao-videoconsulta.md)
 
 ---
 
@@ -30,14 +30,14 @@
 |---|----------|----------|-----------|--------|
 | 1 | Quem entra na **shortlist**? | **GetStream Video**, **Daily.co**, **LiveKit** (Cloud + self-host P1) — ver §2.3 | §2.2, §4 | 🟢 Desk research |
 | 2 | SDKs **NestJS + Angular + RN** viáveis? | Sim para shortlist; mediasoup/Janus com gap RN | §4 matriz | 🟢 Desk research |
-| 3 | **Webhooks/eventos** para `mídia_pendente` → `ativa`? | GetStream, Daily, LiveKit: sim (webhooks/API); P2: custom | §4, §6 PoC | 🟡 Confirmar no PoC |
-| 4 | **C3** — mesma room + rejoin? | Modelo híbrido suportado pelos finalistas/shortlist; validar RN | §6 PoC | 🔴 PoC pendente |
-| 5 | **Custo** baseline / 2× / 10×? | Planilha §5; CPaaS ~US$ 100–300/mês no baseline | §5 | 🟢 Estimativa pública |
+| 3 | **Webhooks/eventos** para `mídia_pendente` → `ativa`? | GetStream e LiveKit: **confirmado** via webhooks no PoC (P2) | §4, §6.6 | 🟢 PoC |
+| 4 | **C3** — mesma room + rejoin? | **Confirmado** nos dois finalistas (P4 RN Expo) | §6.6 | 🟢 PoC |
+| 5 | **Custo** baseline / 2× / 10×? | Comparativo §5 — LiveKit Ship ~US$ 52/mês; GetStream HD ~US$ 108/mês (bruto) | §5 | 🟢 Estimativa pública |
 | 6 | **Lifecycle de room** sem artifícios de custo? | Capability define política; provider executa TTL/destroy | ADR-003 | 🟡 Parcial |
 | 7 | **Migração** vs Go Rooms? | Cutover no reboot; sem dual stack no legado | [SPIKE §3.8](./SPIKE.md#38-migração-desde-go-rooms-twilio) | 🟢 Decidido |
 | 8 | **H3 GetStream** — ganho real? | Familiaridade vendor + possível conta; **não** reduz escopo H2 | §2.1 P0 | 🟢 Decidido |
 | 9 | **Compliance** LGPD / residência? | Validar com segurança/jurídico por vendor | §6 unknowns | 🟡 Paralelizar |
-| 10 | **MVP + plan B**? | **Inclinação:** MVP **GetStream Video (P0)**; plan B **Daily (P0)** ou **LiveKit Cloud (P0/P1)** | ADR-003, §6 | 🟡 PoC confirma |
+| 10 | **MVP + plan B**? | **PoC A e B pass** — decisão final entre **GetStream** e **LiveKit Cloud**; Daily permanece plan C | ADR-003, §6.6 | 🟡 Escolha pendente |
 | 11 | **Provider próprio** no prazo reboot? | **P1** LiveKit self-host viável em **staging Docker** (§2.5); go-live CPaaS no MVP; **P2** adiado | §2.4, §2.5 | 🟢 Desk research |
 | 12 | Observabilidade mídia sem CPaaS? | **P1** LiveKit: webhooks + API; **P2**: build custom | §2.4 | 🟡 P1 ok; P2 alto esforço |
 | 13 | **TCO** CPaaS vs self-host? | Baseline: CPaaS menor TCO total; 10×: reavaliar P1 | §5 | 🟢 Estimativa |
@@ -174,9 +174,9 @@ _Pesos: ver §3. “?” = validar no PoC._
 | Critério (peso) | GetStream Video P0 | Daily.co P0 | LiveKit Cloud P0 | LiveKit self-host P1 |
 |-----------------|-------------------|-------------|------------------|----------------------|
 | Anti-desencontro (3) | Forte — webhooks call | Forte — meeting events | Forte — participant/track webhooks | Forte — igual Cloud |
-| C3 mobile (3) | ? — SDK RN maduro | ? — RN SDK | ? — `@livekit/react-native` | ? — mesmo SDK |
+| C3 mobile (3) | Forte — PoC RN (P4) | ? — não PoC | Forte — PoC RN (P4) | ? — mesmo SDK |
 | Stack §0.6 (3) | Forte | Forte | Forte | Forte |
-| Custo variável (2) | Médio — ~$0.0015/min HD agregado | Médio — ~$0.004/min | Médio — connection + bandwidth | Fraco variável — custo fixo infra |
+| Custo variável (2) | Médio — ~US$ 108/mês HD baseline (bruto) | Médio — ~$0.004/min | **Forte** — ~US$ 52/mês Ship baseline | Fraco variável — custo fixo infra |
 | Time-to-MVP (2) | Forte — H3 + docs | Forte | Forte | Médio — **Docker/Compose** reduz bootstrap vs P1 genérico (§2.5) |
 | Operação (2) | Forte — SaaS | Forte | Forte | Médio — on-call; observabilidade mínima ok no MVP baixo volume |
 | Lock-in (2) | Médio | Médio | Forte — OSS + Cloud | Forte — OSS |
@@ -186,14 +186,16 @@ _Pesos: ver §3. “?” = validar no PoC._
 | Soberania (2) | Médio | Médio | Médio | Forte |
 | Risco ops WebRTC (3) | Forte | Forte | Forte | Médio |
 
-**Síntese desk research:**
+**Síntese pós-PoC (mai/2026):**
 
-- **GetStream Video:** melhor alinhamento H3 + stacks; custo competitivo em HD agregado; **inclinação MVP**.
-- **Daily.co:** alternativa P0 forte; pricing simples; menos ganho H3.
-- **~~100ms~~:** avaliado na long list; **eliminado** — SDK server Node em beta, incompatível com knockout NestJS (§0.6).
-- **~~Amazon Chime SDK~~:** na **long list** (AWS); **fora da shortlist** por decisão explícita — reavaliar só se estratégia AWS + PoC RN for priorizada.
-- **LiveKit:** melhor caminho para **P1** (self-host) sem P2; Cloud como PoC B; self-host com **Docker** viável em staging (§2.5) — não exige coturn separado no primeiro passo.
+- **GetStream Video (A):** pass em P1–P6; melhor alinhamento H3 + stacks; **custo HD baseline maior** que LiveKit Ship (~US$ 108 vs ~US$ 52/mês, bruto).
+- **LiveKit Cloud (B):** pass em P1–P6; **menor OPEX no baseline**; caminho **P1 self-host** sem trocar SDKs; OSS reduz lock-in.
+- **Daily.co:** plan C se decisão exigir terceiro vendor — não executado (A e B pass).
+- **~~100ms~~:** eliminado — SDK server Node em beta (§0.6).
+- **LiveKit self-host (P1):** opcional pós go-live — PoC Cloud pass; staging Docker (§2.5).
 - **P2 in-house:** adiado (§2.4).
+
+**Decisão MVP:** ambos finalistas **atendem requisitos obrigatórios** — escolha entre GetStream e LiveKit Cloud com base em custo, H3, lock-in e operação (§6.7).
 
 ---
 
@@ -219,17 +221,41 @@ Custo_mensal ≈ N_dia × 30 × (
 )
 ```
 
-### Estimativa OPEX variável (participant-minutes = 72.000/mês)
+### Premissas de pricing (público mai/2026)
 
-| Provider | Premissa pricing (público mai/2026) | Estimativa mensal |
-|----------|-----------------------------------|-------------------|
-| **Daily.co** | ~US$ 0,004/min vídeo+áudio; 10k min grátis | ~US$ 248 (62k × 0,004) |
-| **GetStream Video** | ~US$ 1,50 / 1k min HD (720p agregado) ≈ US$ 0,0015/min | ~US$ 108 − créditos US$ 100 |
-| **LiveKit Cloud** | connection + bandwidth (modelo 2025+) | ~US$ 50–150 (estimativa baixa escala) |
-| **LiveKit self-host (P1)** | 2× VM + TURN + egress | ~US$ 150–400 fixo + engenharia |
-| **P2 in-house** | Infra + **>1 FTE** amortizado | TCO >> CPaaS no MVP |
+| Provider | Unidade de cobrança | Tarifa de referência |
+|----------|---------------------|----------------------|
+| **GetStream Video** | participant-minute × qualidade | SD: US$ 0,75 / 1k min · HD: US$ 1,50 / 1k min ([pricing guide](https://getstream.io/video/docs/api/pricing-guide/)) |
+| **LiveKit Cloud (Ship)** | WebRTC minutes + downstream bandwidth | Plano US$ 50/mo; 150k WebRTC min incl.; US$ 0,0005/min excedente; US$ 0,12/GB bandwidth ([pricing](https://livekit.com/pricing)) |
+| **LiveKit Cloud (Build)** | Idem | Plano US$ 0; 5k WebRTC min incl. |
+| **Daily.co** (plan C) | participant-minute | ~US$ 0,004/min vídeo+áudio |
+| **LiveKit self-host (P1)** | infra fixa | ~US$ 150–400/mês + engenharia |
 
-Cenários 2× e 10×: multiplicar participant-minutes; P1 pode cruzar CPaaS em ~10× — **gatilho** para reavaliar self-host.
+**Nota:** estimativas GetStream abaixo são **brutas** (sem crédito promocional de US$ 100/mês), para comparabilidade conservadora com LiveKit.
+
+**Bandwidth LiveKit:** ~500 kbps/participante → ~270 GB/mês no baseline (72k participant-min).
+
+### Comparativo OPEX — finalistas PoC (US$/mês, bruto)
+
+| Cenário | Participant-min/mês | GetStream SD | GetStream HD | LiveKit Build | LiveKit Ship |
+|---------|---------------------|--------------|--------------|---------------|--------------|
+| **Baseline** (20/dia) | 72.000 | **54** | **108** | ~60 | **~52** |
+| **2×** (40/dia) | 144.000 | **108** | **216** | ~128 | **~85** |
+| **10×** (200/dia) | 720.000 | **540** | **1.080** | ~676 | **~629** |
+
+_Fórmulas: GetStream = (participant-min ÷ 1.000) × tarifa; LiveKit Ship = US$ 50 + excedente WebRTC + excedente bandwidth._
+
+### Leitura por volume
+
+| Volume | Menor custo (finalistas) | Observação |
+|--------|--------------------------|------------|
+| Baseline | **LiveKit Ship** (~US$ 52) | GetStream HD ~2× mais caro; SD (~US$ 54) próximo do LiveKit |
+| 2× | **LiveKit Ship** (~US$ 85) | GetStream SD (~US$ 108) ainda acima |
+| 10× | **GetStream SD** (~US$ 540) vs LiveKit Ship (~US$ 629) | HD GetStream (~US$ 1.080) inviável vs LiveKit; gatilho **P1 self-host** |
+
+**Outros (referência baseline):** Daily.co ~US$ 248/mês · LiveKit self-host (P1) ~US$ 150–400 fixo + engenharia · P2 in-house TCO >> CPaaS.
+
+**Sensibilidades não modeladas:** no-show/lobby (C2), gravação, noise cancellation, crédito GetStream US$ 100/mês.
 
 **Processo:** proposta com tabela acima → validação stakeholders (sem teto pré-definido).
 
@@ -305,12 +331,33 @@ _Não é pré-requisito montar **coturn** como projeto separado no primeiro pass
 
 ### 6.6 Resultados PoC
 
-| Prova | GetStream (A) | LiveKit (B) | Daily (plan B) |
+Repositório: `poc-videoconsulta/` · Detalhes: [RESULTADOS-POC.md](./poc-videoconsulta/docs/RESULTADOS-POC.md)
+
+| Prova | GetStream (A) | LiveKit (B) | Daily (plan C) |
 |-------|---------------|-------------|----------------|
-| Mídia bidirecional | 🔴 Pendente | 🔴 Pendente | — |
-| C3 RN | 🔴 Pendente | 🔴 Pendente | — |
-| C4 veto | 🔴 Pendente | 🔴 Pendente | — |
-| E2E stacks | 🔴 Pendente | 🔴 Pendente | — |
+| P1 — Áudio+vídeo bidirecional | ✅ Pass | ✅ Pass | — |
+| P2 — Webhook antes de `ativa` | ✅ Pass | ✅ Pass | — |
+| P3 — UI não mostra ativa sem P2 | ✅ Pass | ✅ Pass | — |
+| P4 — Rejoin C3 (RN Expo) | ✅ Pass | ✅ Pass | — |
+| P5 — Rejoin bloqueado após encerrar (C4) | ✅ Pass | ✅ Pass | — |
+| P6 — Sem sessão órfã | ✅ Pass | ✅ Pass | — |
+| E2E NestJS + Angular + RN | ✅ Pass | ✅ Pass | — |
+
+**Conclusão técnica:** ambos finalistas **supriram os requisitos obrigatórios** do projeto (P1–P6, stacks §0.6, anti-desencontro, C3, C4). Daily.co **não executado** — desnecessário após pass duplo.
+
+### 6.7 Síntese para decisão de provider
+
+| Fator | GetStream Video (A) | LiveKit Cloud (B) |
+|-------|---------------------|-------------------|
+| PoC obrigatório | ✅ Pass | ✅ Pass |
+| Anti-desencontro (P2/P3) | ✅ | ✅ |
+| C3 mobile (P4) | ✅ | ✅ |
+| OPEX baseline (bruto) | ~US$ 108/mês (HD) | **~US$ 52/mês (Ship)** |
+| H3 (ecossistema Dr Clin) | **Favorável** | Neutro |
+| Lock-in / caminho P1 | Médio | **Forte** (OSS + self-host) |
+| Inclinação desk research | MVP original | Plan B → **empatado pós-PoC** |
+
+**Próximo passo:** stakeholders escolhem entre A e B (ou critérios de desempate documentados) → [ADR-003](./docs/adr/ADR-003-provider-videoconsulta.md) **Aceito** com provider nomeado.
 
 ---
 
@@ -348,8 +395,8 @@ A capability mapeia eventos → transições `mídia_pendente` / `ativa` ([SPIKE
 
 | # | Unknown | Impacto | Como validar | Status |
 |---|---------|---------|--------------|--------|
-| 1 | Mecanismo exato anti-desencontro por vendor | Alto | PoC §6 | 🔴 |
-| 2 | C3 em RN (rede instável) | Alto | PoC §6 | 🔴 |
+| 1 | Mecanismo exato anti-desencontro por vendor | Alto | PoC §6.6 | 🟢 GetStream + LiveKit |
+| 2 | C3 em RN (rede instável) | Alto | PoC §6.6 | 🟢 GetStream + LiveKit |
 | 3 | LGPD / residência dados por vendor | Médio | Segurança + DPA | 🟡 |
 | 4 | `P_no_show`, `P_recon` para custo fino | Baixo | Produto | 🟡 |
 | 5 | LiveKit self-host no go-live vs +6m | Médio — Docker reduz esforço; gate = PoC Cloud + staging compose | Workshop SRE | 🟡 |
@@ -367,8 +414,8 @@ A capability mapeia eventos → transições `mídia_pendente` / `ativa` ([SPIKE
 - [x] Spike técnica P2 — adiar MVP (§2.4)
 - [x] Finalistas PoC nomeados (§6.1)
 - [x] Rascunho `IVideoProvider` (§7)
-- [ ] PoC §6 executado (2 finalistas) — **próximo passo engenharia**
-- [ ] [ADR-003](./docs/adr/ADR-003-provider-videoconsulta.md) **Aceito** após PoC
+- [x] PoC §6 executado (2 finalistas) — **pass A e B**
+- [ ] [ADR-003](./docs/adr/ADR-003-provider-videoconsulta.md) **Aceito** — escolha final A vs B pendente
 
 ### B. Entregáveis
 
@@ -385,7 +432,7 @@ A capability mapeia eventos → transições `mídia_pendente` / `ativa` ([SPIKE
 
 ### D. Gate — liberar adapter MVP quando
 
-PoC §6 **pass** nos critérios alta prioridade + ADR-003 **Aceito**.
+PoC §6 **pass** nos critérios alta prioridade (✅) + ADR-003 **Aceito** com provider escolhido entre A e B.
 
 ---
 
@@ -422,3 +469,4 @@ flowchart LR
 | 2026-05-21 | | Inclusão **100ms** na long list — depois **eliminado** (Server SDK Node beta; knockout NestJS) |
 | 2026-05-21 | | **Amazon Chime SDK** na long list only — não shortlist (AWS; RN via nativo/demo) |
 | 2026-05-21 | | §2.5 LiveKit self-host + Docker; checklist §6.5; matriz/PoC opcional staging |
+| 2026-05-26 | | PoC A (GetStream) e B (LiveKit) pass P1–P6; §5 comparativo de custos bruto; §6.7 síntese decisão |

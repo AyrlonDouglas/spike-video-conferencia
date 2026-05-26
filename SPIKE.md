@@ -2,7 +2,7 @@
 
 > **Objetivo desta spike:** definir critérios e evidências para escolher a **abordagem arquitetural** (não o provider/stack). Pesquisa de soluções e PoCs técnicos ficam para uma fase posterior.
 >
-> **Referência:** [PRD.md](./PRD.md) · [GLOSSARIO.md](./GLOSSARIO.md) (siglas e termos) · **Fases seguintes:** [SPIKE-H2.md](./SPIKE-H2.md) (implementação) · [SPIKE-PROVIDER.md](./SPIKE-PROVIDER.md) (provider de mídia)
+> **Referência:** [PRD.md](./PRD.md) · [GLOSSARIO.md](./GLOSSARIO.md) (siglas e termos) · **Resumo executivo:** [docs/SPIKE-RESUMO-EXECUTIVO.md](./docs/SPIKE-RESUMO-EXECUTIVO.md) · **Fases seguintes:** [SPIKE-H2.md](./SPIKE-H2.md) (implementação) · [SPIKE-PROVIDER.md](./SPIKE-PROVIDER.md) (provider de mídia)
 
 ---
 
@@ -214,7 +214,7 @@ Min-participante/mês    ≈ 72.000             (2 × 60 min × 600 consultas)
 | 3 | Reconexão (C3) é **mesma sessão técnica** ou **nova sessão com continuidade de negócio**? | **Modelo híbrido (§3.2.2):** mesma sessão de **negócio** na capability; **preferir** mesma room do provider; mídia **sempre** revalidada via `mídia_pendente`. Nova room só como fallback | Desencontro + mobile | 🟢 Decidido |
 | 4 | O que são os **“desencontros”** hoje (sintoma, causa provável, impacto)? | **Sintoma:** na chamada, mas não se veem/ouvem. **Impacto:** consulta inviável. **Causa raiz no legado:** não será investigada via PoC — mitigação na nova arquitetura (§3.2.1, §11) | Produto / suporte | 🟢 Suficiente p/ spike |
 | 5 | Quanto de **prática operacional do ecossistema** (H3) se aplica a vídeo 1:1? | **Limitado:** chat GetStream não transfere integração de vídeo — SDKs distintos, módulos backend/frontend novos (§0.1). Chat existe no **Dr Clin** (Api.Saúde **não** usa chat); modalidade acoplada ao produto — **lição**, não base para videoconsulta. Reuso: familiaridade com vendor + práticas transversais (auth, observabilidade) | Confirmação engenharia | 🟢 Decidido |
-| 6 | Qual **modelo de custo** escala de forma sustentável com o volume esperado? | Baseline parametrizado (§3.5); **aceitabilidade** depende de proposta + validação stakeholders | §0, §3.5 | 🟡 Parcial |
+| 6 | Qual **modelo de custo** escala de forma sustentável com o volume esperado? | Comparativo GetStream vs LiveKit em [SPIKE-PROVIDER §5](./SPIKE-PROVIDER.md#5-modelo-de-custo-paramétrico); aceitabilidade → stakeholders | §0, §3.5, SPIKE-PROVIDER §5 | 🟢 Estimativa pública |
 | 7 | Qual estratégia de **migração** desde Go Rooms (Twilio) é aceitável no MVP? | **Cutover com reboot** da Api.Saúde — nova capability **não** entra no legado (§0.5) | Reboot + produto | 🟢 Decidido |
 
 ---
@@ -296,7 +296,7 @@ sequenceDiagram
     VC->>CL: estado vetada
 ```
 
-**PoC pendente:** mecanismo exato de confirmação de mídia bidirecional por provider escolhido.
+**PoC concluído:** mecanismo de confirmação de mídia bidirecional **validado** em GetStream e LiveKit ([SPIKE-PROVIDER §6.6](./SPIKE-PROVIDER.md#66-resultados-poc)).
 
 ### 3.2.2 Política de reconexão (C3)
 
@@ -372,9 +372,9 @@ Preencher variáveis; valores numéricos podem ficar como placeholder até fase 
 
 **Drivers de custo a mapear (qualquer abordagem):**
 
-- [ ] Cobrança por minuto de mídia
+- [x] Cobrança por minuto de mídia — [SPIKE-PROVIDER §5](./SPIKE-PROVIDER.md#5-modelo-de-custo-paramétrico)
+- [x] Cobrança por participante conectado (participant-minute)
 - [ ] Cobrança por sessão/sala criada
-- [ ] Cobrança por participante conectado
 - [ ] Custo de sessão abandonada (C2)
 - [ ] Impacto de reconexão (C3) — nova sessão vs continuidade
 - [ ] Sensibilidade a pico horário
@@ -389,11 +389,11 @@ Custo_mensal ≈ N_dia × 30 × (
 )
 ```
 
-| Cenário de volume | N_dia | Minutos mídia/mês | Custo mensal estimado | Observação |
-|-------------------|-------|-------------------|----------------------|------------|
-| Baseline | 20 | ~36.000 | _plugar `custo_minuto`_ | 600 consultas/mês |
-| 2× baseline | 40 | ~72.000 | | |
-| 10× baseline | 200 | ~360.000 | | Crescimento agressivo |
+| Cenário de volume | N_dia | Participant-min/mês | Custo mensal (finalistas PoC) | Observação |
+|-------------------|-------|---------------------|------------------------------|------------|
+| Baseline | 20 | ~72.000 | LiveKit Ship ~US$ 52 · GetStream HD ~US$ 108 (bruto) | 600 consultas/mês — ver [SPIKE-PROVIDER §5](./SPIKE-PROVIDER.md#5-modelo-de-custo-paramétrico) |
+| 2× baseline | 40 | ~144.000 | LiveKit Ship ~US$ 85 · GetStream HD ~US$ 216 | |
+| 10× baseline | 200 | ~720.000 | LiveKit Ship ~US$ 629 · GetStream SD ~US$ 540 | Gatilho reavaliar P1 self-host |
 
 **Processo de budget:** elaborar proposta com a fórmula acima + cenários → stakeholders validam aceitabilidade (sem teto numérico pré-definido).
 
@@ -465,7 +465,7 @@ Legenda: **F** = favorece · **N** = neutro · **P** = prejudica · **?** = desc
 >
 > **Lição do Dr Clin:** modalidade realtime acoplada ao produto gera dívida de desacoplamento se vídeo for adicionado depois; videoconsulta Api.Saúde nasce como H2 com contrato estável.
 >
-> **Ainda exige decisão/PoC:** taxa de no-show, confirmação de mídia bidirecional por provider, **grace period C3 (adiado)**, **valores C2 pelo consumidor (adiado)**. **Desencontros do legado:** não serão reproduzidos/investigados em PoC (§11).
+> **Ainda exige decisão:** taxa de no-show, **escolha final de provider** (GetStream vs LiveKit — ambos pass PoC), **grace period C3 (adiado)**, **valores C2 pelo consumidor (adiado)**. **Desencontros do legado:** não reproduzidos em PoC (§11).
 
 ---
 
@@ -563,15 +563,16 @@ _Estado `MidiaPendente` evita marcar consulta como ativa quando participantes es
 
 | Entregável | Status | Link / nota |
 |------------|--------|-------------|
+| **Resumo executivo (stakeholders)** | ✅ | [docs/SPIKE-RESUMO-EXECUTIVO.md](./docs/SPIKE-RESUMO-EXECUTIVO.md) |
 | Contexto Q&A documentado (seção 0) | ✅ | |
 | Mapa cenário → requisito → dono (seção 3.1 + 3.4) | 🟡 | C2/C4/migração parcialmente preenchidos (§0.5) |
 | Diagrama de estados validado (seção 7) | ✅ | Validado produto + engenharia |
 | Matriz H1/H2/H3 preenchida (seção 4) | ✅ | H1 rejeitada; H2 direção escolhida |
-| Modelo de custo com variáveis (seção 3.5) | 🟡 | Baseline numérico; falta no-show e custo_minuto |
-| Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | #2–#4, #7, #8 ok ou adiados; #1 parcial; #5–#6 abertos |
+| Modelo de custo com variáveis (seção 3.5) | 🟢 | Comparativo GetStream vs LiveKit em SPIKE-PROVIDER §5 |
+| Lista de unknowns resolvida ou escalada (seção 5) | 🟡 | PoC provider ok; #1 parcial; #5–#6 abertos |
 | ADR de colocação arquitetural | 🟡 | Proposto — aceitar ao cumprir §11 |
 | Definition of Done (§11) | ⬜ | Checklist de encerramento da fase arquitetural |
-| Lista do que o PoC futuro deve provar | 🟡 | Ver seção 9 — sem validação de desencontro legado |
+| Lista do que o PoC futuro deve provar | ✅ | PoC concluído — [SPIKE-PROVIDER §6.6](./SPIKE-PROVIDER.md#66-resultados-poc) |
 
 ---
 
@@ -648,7 +649,7 @@ Checklist para **fechar a fase “qual abordagem?”** e **abrir a fase provider
 ### D. Pode paralelizar (não bloqueia encerramento)
 
 - [ ] Taxa de no-show (`P_no_show`) — modelo de custo §3.5
-- [x] Proposta de custo com `custo_minuto` do provider — estimativa baseline em [SPIKE-PROVIDER §5](./SPIKE-PROVIDER.md#5-modelo-de-custo-paramétrico) (validar pós-PoC)
+- [x] Proposta de custo com comparativo GetStream vs LiveKit — [SPIKE-PROVIDER §5](./SPIKE-PROVIDER.md#5-modelo-de-custo-paramétrico) (validar com stakeholders)
 - [ ] Compliance LGPD / retenção de metadados e logs (#5)
 - [ ] SLA numérico (#6) — grace period adiado
 - [ ] Runbooks operacionais (§3.6)
@@ -672,9 +673,9 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 |------|-------------|-----------|--------|
 | Spike arquitetural encerrada (§11 A+B+C) | | | ⬜ |
 | Spike provider (desk research) | | 2026-05-21 | ✅ [SPIKE-PROVIDER.md](./SPIKE-PROVIDER.md) |
-| Provider escolhido (ADR-003 Aceito) | | | 🟡 Inclinação GetStream — PoC pendente |
-| PoC mínimo concluído (§9) | | | ⬜ — ver [docs/poc/PLANO-POC-PROVIDER.md](./docs/poc/PLANO-POC-PROVIDER.md) |
-| Budget validado com stakeholders | | | ⬜ |
+| Provider escolhido (ADR-003 Aceito) | | | 🟡 PoC pass A+B — escolha GetStream vs LiveKit pendente |
+| PoC mínimo concluído (§9) | | 2026-05-26 | ✅ GetStream + LiveKit — [RESULTADOS-POC](./poc-videoconsulta/docs/RESULTADOS-POC.md) |
+| Budget validado com stakeholders | | | 🟡 Comparativo §5 SPIKE-PROVIDER pronto |
 
 ---
 
@@ -698,4 +699,5 @@ Todos os itens **A** marcados **e** todos os itens **B** + **C** marcados.
 | 2026-05-20 | | §0.1 corrigido: refatoração do chat condicional (só se vídeo for adicionado ao Dr Clin) |
 | 2026-05-20 | | §0.1: produto de chat identificado como **Dr Clin** |
 | 2026-05-21 | | SPIKE-PROVIDER iniciada; ADR-003; gate provider desk research |
+| 2026-05-26 | | PoC GetStream + LiveKit pass; §3.5 comparativo de custos; gate PoC concluído |
 | 2026-05-20 | | §0.6: familiaridade do time — Node/NestJS, Angular, React Native; critérios para pesquisa de provider |

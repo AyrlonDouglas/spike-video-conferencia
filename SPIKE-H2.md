@@ -312,7 +312,7 @@ Derivado do reboot + C1–C4. Refinar com o time.
 | 2 | Existe time de plataforma / shared services? | **Sim** — time existe; **produto plataforma unificado não** | §2.1 | 🟢 Decidido — inclina **H2-A′** (serviço dedicado operado por plataforma) |
 | 3 | Backoffice precisa join ou só observabilidade? | **Só observabilidade** — sala sempre médico + paciente | Produto | 🟢 Decidido |
 | 4 | Padrão de auth M2M no ecossistema | **JWT + API keys** (provável); detalhar com segurança | Segurança / platform | 🟡 Parcial |
-| 5 | Provider escolhido | **Inclinação:** GetStream Video (P0); PoC vs LiveKit Cloud | [SPIKE-PROVIDER](./SPIKE-PROVIDER.md) | 🟡 Parcial — PoC pendente |
+| 5 | Provider escolhido | PoC pass **GetStream + LiveKit** — escolha final pendente | [SPIKE-PROVIDER](./SPIKE-PROVIDER.md) | 🟡 PoC ok — decisão pendente |
 | 6 | Colocação H2-A′ vs B vs híbrido | **Inclinação H2-A′** — §2.2, §3.1 | Workshop stakeholders | 🟡 Parcial |
 | 7 | Fluxo JoinSession (cliente direto vs via Api.Saúde) | **Inclinação híbrido C** — join via Api.Saúde no MVP | §3.3.1 | 🟡 Parcial |
 

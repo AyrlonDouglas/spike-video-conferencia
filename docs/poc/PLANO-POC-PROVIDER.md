@@ -58,13 +58,15 @@ poc-videoconsulta/
 
 ## Critério go/no-go
 
-**Go para ADR-003 Aceito + implementação adapter:**
+**Resultado (2026-05-26):** finalistas **A (GetStream)** e **B (LiveKit)** — **pass** P1–P6.
 
-- Finalista A: P1–P5 **pass**
-- Se A falha P4 ou P2: executar plan B (Daily) ou promover B (LiveKit) com mesma checklist
+**Go técnico** para ADR-003 Aceito + implementação adapter — **após escolha explícita** entre GetStream e LiveKit Cloud.
+
+Daily.co (plan C) **não executado** — A e B pass.
 
 ## Atualização pós-PoC
 
-1. Preencher [SPIKE-PROVIDER.md §6.6](../../SPIKE-PROVIDER.md#66-resultados-poc)
-2. Atualizar [ADR-003](../adr/ADR-003-provider-videoconsulta.md) — Status → **Aceito**
-3. Desbloquear implementação `IVideoProvider` no programa reboot
+1. [x] Preencher [SPIKE-PROVIDER.md §6.6](../../SPIKE-PROVIDER.md#66-resultados-poc)
+2. [x] [RESULTADOS-POC.md](../../poc-videoconsulta/docs/RESULTADOS-POC.md)
+3. [ ] Escolher provider MVP → [ADR-003](../adr/ADR-003-provider-videoconsulta.md) Status → **Aceito**
+4. [ ] Desbloquear implementação `IVideoProvider` no programa reboot

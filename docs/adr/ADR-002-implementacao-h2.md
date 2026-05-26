@@ -31,7 +31,7 @@ A [spike de colocação](./ADR-001-colocacao-videoconsulta.md) decidiu **H2 — 
 
 **Sync estado → clientes:** _poll / SSE / WebSocket — pergunta #4_
 
-**Provider adapter:** `IVideoProvider` — [SPIKE-PROVIDER §7](../../SPIKE-PROVIDER.md#7-interface-ivideoprovider-rascunho). **Vendor MVP (provisório):** GetStream Video (P0) — confirmar via PoC; plan B Daily; ver [ADR-003](./ADR-003-provider-videoconsulta.md)
+**Provider adapter:** `IVideoProvider` — [SPIKE-PROVIDER §7](../../SPIKE-PROVIDER.md#7-interface-ivideoprovider-rascunho). **Vendor MVP:** GetStream Video ou LiveKit Cloud — PoC pass em ambos; escolha pendente — ver [ADR-003](./ADR-003-provider-videoconsulta.md)
 
 **Auth:** consumidor **JWT + API keys** M2M; participante join token curto _(detalhar)_
 
@@ -57,8 +57,8 @@ A [spike de colocação](./ADR-001-colocacao-videoconsulta.md) decidiu **H2 — 
 ### Follow-ups
 
 - [x] Spike provider iniciada — [SPIKE-PROVIDER.md](../../SPIKE-PROVIDER.md) · [ADR-003](./ADR-003-provider-videoconsulta.md)
-- [ ] PoC provider (§6 SPIKE-PROVIDER) — gate para adapter em produção
-- [ ] PoC §9 [SPIKE.md](../../SPIKE.md)
+- [x] PoC provider (§6 SPIKE-PROVIDER) — GetStream + LiveKit pass
+- [ ] Escolha final provider → ADR-003 Aceito
 - [ ] Backlog de implementação no reboot Api.Saúde
 
 ---
