@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Fase 1 (Exps 0–8) **concluída** · **Fase 2** (h540) planejada abaixo |
+| **Status** | Fase 1 (Exps 0–8) **concluída** · Fase 2 (Exps 10, 12–14) **concluída** · Exp 11 *(opcional)* não rodado |
 | **Preset adotado** | **h360** (~450 kbps) nos dois lados + stack Exps 3–8 |
 
 ---
@@ -355,14 +355,25 @@ export const CONSULTA_VIDEO_PRESET = VideoPresets.h540;
 
 | Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) | Δ vs Exp 13 |
 |---------|-------|---------------------------|---------------------|-------------|
-| Duração | *(pendente)* | — | — | — |
-| Upstream | *(pendente)* | | | |
-| Downstream | *(pendente)* | | | |
-| **Total** | *(pendente)* | | | |
+| Duração | **6 min** | — | — | — |
+| Upstream | **122,83 MB** | ~20,5 MB/min | **−40%** (34,1 → 20,5) | **+7%** (19,1 → 20,5) |
+| Downstream | **44,46 MB** | ~7,4 MB/min | **−69%** (24,2 → 7,4) | **+40%** (5,3 → 7,4) |
+| **Total** | **167,29 MB** | ~27,9 MB/min | **−52%** (58,3 → 27,9) | **+14%** (24,4 → 27,9) |
+
+**Leitura:** **maior tráfego da Fase 2** — coerente com HIGH simétrico (teto simulcast ~540p nos dois lados). vs Exp 13 (MEDIUM simétrico): **+7% up**, **+40% down** — ganho claro no downlink agregado ao subir de MEDIUM → HIGH. vs Exp 10 (h540 sem cap): **+47% up**, **+58% down** — HIGH explícito **mais caro** que h540 “livre” (18,5 → 27,9 MB/min total). vs h360+stack (Exp 2: 8,2 / 5,4 MB/min): **+150% up**, **+37% down** — h540+HIGH **~2×** o custo total do h360+stack (~13,6 → 27,9 MB/min). Ainda **−52%** vs baseline Exp 0.
+
+**Síntese Fase 2 (6 min, MB/min):**
+
+| Exp | Config | Up | Down | Total |
+|-----|--------|-----|------|-------|
+| 10 | h540, sem cap assinatura | 13,9 | 4,7 | 18,5 |
+| 12 | h540 + MEDIUM só mobile | 18,6 | 5,8 | 24,4 |
+| 13 | h540 + MEDIUM simétrico | 19,1 | 5,3 | 24,4 |
+| **14** | **h540 + HIGH simétrico** | **20,5** | **7,4** | **27,9** |
+
+Cap MEDIUM (12–13) **não separou** da variação de sessão; HIGH (14) **sim** elevou downstream de forma mensurável. **Preset h540** domina o uplink em todos os Exps 10–14.
 
 **Qualidade subjetiva:** *(pendente)* — vídeo médico→paciente, paciente→médico, áudio, travamentos.
-
-**Comparar com:** Exp 13 — espera-se ↑ downstream; qualidade simétrica no teto (~540p). Referência também vs Exp 2 (h360+stack) e Exp 10 (h540 sem cap).
 
 ---
 
@@ -399,7 +410,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 11 publish-h540-patient | | | | | | | | | h540 só paciente *(opcional)*; Fase 2 |
 | 12 quality-medium-remote-h540 | 2026-05-27 | `RM_rACxcmtEShGm` | 6 min | 111,41 MB (18,6 MB/min) | 34,78 MB (5,8 MB/min) | **−45%** | **−76%** | — | MEDIUM só mobile; ~Exp 13; Fase 2 |
 | 13 quality-medium-both-h540 | 2026-05-27 | `RM_8ukc4mPaVAks` | 6 min | 114,49 MB (19,1 MB/min) | 32,08 MB (5,3 MB/min) | **−44%** | **−78%** | — | MEDIUM simétrico; +37% up vs Exp 10; Fase 2 |
-| 14 quality-high-both-h540 | 2026-05-27 | `RM_gnQJknNwr2b9` | | | | | | | HIGH remoto; paciente + web; h540 |
+| 14 quality-high-both-h540 | 2026-05-27 | `RM_gnQJknNwr2b9` | 6 min | 122,83 MB (20,5 MB/min) | 44,46 MB (7,4 MB/min) | **−40%** | **−69%** | — | HIGH simétrico; maior Fase 2; +40% down vs Exp 13 |
 
 **Como calcular Δ (Fase 2):** além do Exp 0, anotar Δ vs **h360+stack** (~8,2 / ~5,4 MB/min da Exp 2 ou média Exps 5–6).
 
