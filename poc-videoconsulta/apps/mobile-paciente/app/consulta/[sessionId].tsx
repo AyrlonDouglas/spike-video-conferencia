@@ -16,6 +16,7 @@ import {
 } from 'livekit-client';
 import { AudioSession, VideoTrack } from '@livekit/react-native';
 import {
+  AUDIO_PUBLISH_OPTIONS,
   connectRoomWithLocalMedia,
   createConsultaRoom,
 } from '../../src/utils/livekit-room';
@@ -85,7 +86,12 @@ export default function ConsultaPacienteScreen() {
   const toggleMic = useCallback(async () => {
     if (!room) return;
     try {
-      await room.localParticipant.setMicrophoneEnabled(!micEnabled);
+      const next = !micEnabled;
+      await room.localParticipant.setMicrophoneEnabled(
+        next,
+        undefined,
+        next ? AUDIO_PUBLISH_OPTIONS : undefined,
+      );
       syncMediaControls(room);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao alternar microfone');

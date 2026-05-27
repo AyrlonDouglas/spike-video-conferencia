@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 7 em medição · room `RM_abQHGntFmSX5` |
+| **Status** | Exp 8 em medição · room `RM_FwLENn43zHZL` |
 
 ---
 
@@ -156,6 +156,18 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
 *(Acumula Exps 1–6 no código atual.)*
 
+### Resultado registrado — Exp 8 (em andamento)
+
+**Room LiveKit:** `RM_FwLENn43zHZL` · **mudança:** `red: false` em `publishDefaults` + `setMicrophoneEnabled` — **só** `mobile-paciente`.
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 |
+|---------|-------|---------------------------|------------|
+| Duração | *pendente* | — | — |
+| Upstream | *pendente* | — | — |
+| Downstream | *pendente* | — | — |
+
+*(Acumula Exps 1–7 no código atual.)*
+
 ---
 
 ## Ordem dos experimentos (atômicos)
@@ -206,7 +218,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 5 videotrack | 2026-05-27 | `RM_hV3F964heLmn` | 6 min | 47,92 MB (8,0 MB/min) | 30,74 MB (5,1 MB/min) | **−77%** | **−79%** | — | VideoTrack no RN; ~Exp 2–4 |
 | 6 adaptive-ui | 2026-05-27 | `RM_q3wYiMAJstVF` | | | | | | | PiP + web `object-fit: contain`; métricas pendentes |
 | 7 quality-low-remote | 2026-05-27 | `RM_abQHGntFmSX5` | | | | | | | LOW no remoto; só mobile; métricas pendentes |
-| 8 audio-red-off | | | | | | | | |
+| 8 audio-red-off | 2026-05-27 | `RM_FwLENn43zHZL` | | | | | | | `red: false` no áudio; só mobile; métricas pendentes |
 | 9 profile-orchestrator | | | | | | | | |
 
 **Como calcular Δ:** `Δ Up = (MB/min_exp − 34,1) / 34,1 × 100%` (idem para Down com 24,2).
@@ -266,6 +278,16 @@ import { Track, VideoQuality } from 'livekit-client';
 if (track.kind === Track.Kind.Video) {
   publication.setVideoQuality(VideoQuality.LOW);
 }
+```
+
+### Exp 8 — Audio RED desligado (só paciente, acumula Exps 1–7)
+
+```typescript
+// mobile-paciente/src/utils/livekit-room.ts
+publishDefaults: { videoEncoding: VideoPresets.h360.encoding, red: false },
+export const AUDIO_PUBLISH_OPTIONS = { red: false };
+
+await room.localParticipant.setMicrophoneEnabled(true, undefined, AUDIO_PUBLISH_OPTIONS);
 ```
 
 ---

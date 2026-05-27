@@ -1,6 +1,15 @@
-import { ConnectionState, Room, RoomEvent, VideoPresets } from 'livekit-client';
+import {
+  ConnectionState,
+  Room,
+  RoomEvent,
+  VideoPresets,
+  type TrackPublishOptions,
+} from 'livekit-client';
 
-/** Exps 1–7 (bandwidth) — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
+/** Exp 8 — Audio RED desligado ao publicar áudio (só paciente). */
+export const AUDIO_PUBLISH_OPTIONS: TrackPublishOptions = { red: false };
+
+/** Exps 1–8 (bandwidth) — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
 export function createConsultaRoom(): Room {
   return new Room({
     adaptiveStream: true,
@@ -10,6 +19,7 @@ export function createConsultaRoom(): Room {
     },
     publishDefaults: {
       videoEncoding: VideoPresets.h360.encoding,
+      red: false,
     },
   });
 }
@@ -47,7 +57,7 @@ export async function connectRoomWithLocalMedia(
   }
 
   try {
-    await room.localParticipant.setMicrophoneEnabled(true);
+    await room.localParticipant.setMicrophoneEnabled(true, undefined, AUDIO_PUBLISH_OPTIONS);
     if (isStale()) return;
     await room.localParticipant.setCameraEnabled(true);
   } catch (err) {
