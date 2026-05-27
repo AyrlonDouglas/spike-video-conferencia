@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 2 implementado (`publish-h360` paciente + web) · aguardando medição |
+| **Status** | Exp 3 implementado (`dynacast` + h360 em ambos) · aguardando medição |
 
 ---
 
@@ -112,7 +112,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 0 baseline | 2026-05-27 | `RM_fd6nQgmSn6UF` | 64 min | 2,18 GB (34,1 MB/min) | 1,55 GB (24,2 MB/min) | — | — | — | Cloud; código default; 1:1 |
 | 1 publish-h360 | | `RM_sZcrpj3cuFEB` | | | | | | | Só paciente; métricas Cloud pendentes |
 | 2 publish-h360-both | | `RM_ZJWhAreMYCDi` | | | | | | | Paciente + web; métricas Cloud pendentes |
-| 3 dynacast | | | | | | | | |
+| 3 dynacast | | `RM_wLVgDapJvXcj` | | | | | | | h360 + dynacast; métricas Cloud pendentes |
 | 4 adaptive-stream | | | | | | | | |
 | 5 videotrack | | | | | | | | |
 | 6 adaptive-ui | | | | | | | | |
@@ -136,10 +136,14 @@ Ver `mobile-paciente/src/utils/livekit-room.ts` → `createConsultaRoom()`.
 
 Mesmo preset em `web-profissional/src/app/livekit-room.ts` → `createConsultaRoom()` (mantém `disconnectOnPageLeave: false`).
 
-### Exp 3 — dynacast
+### Exp 3 — dynacast (acumula h360 dos Exps 1–2)
 
 ```typescript
-new Room({ dynacast: true });
+new Room({
+  dynacast: true,
+  videoCaptureDefaults: { resolution: VideoPresets.h360.resolution },
+  publishDefaults: { videoEncoding: VideoPresets.h360.encoding },
+});
 ```
 
 ### Exp 4 — adaptive stream

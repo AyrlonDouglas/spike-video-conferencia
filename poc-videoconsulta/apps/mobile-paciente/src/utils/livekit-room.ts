@@ -1,8 +1,9 @@
 import { ConnectionState, Room, RoomEvent, VideoPresets } from 'livekit-client';
 
-/** Exp 1 (bandwidth): publicação h360 — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
+/** Exps 1–3 (bandwidth) — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
 export function createConsultaRoom(): Room {
   return new Room({
+    dynacast: true,
     videoCaptureDefaults: {
       resolution: VideoPresets.h360.resolution,
     },
