@@ -111,8 +111,8 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 |-----|------|--------------|---------|----------|------------|------------------|---------------------|-----------------|-------------|
 | 0 baseline | 2026-05-27 | `RM_fd6nQgmSn6UF` | 64 min | 2,18 GB (34,1 MB/min) | 1,55 GB (24,2 MB/min) | — | — | — | Cloud; código default; 1:1 |
 | 1 publish-h360 | | `RM_sZcrpj3cuFEB` | | | | | | | Só paciente; métricas Cloud pendentes |
-| 2 publish-h360-both | | | | | | | | | Paciente + web; métricas Cloud pendentes |
-| 3 dynacast | | `RM_ZJWhAreMYCDi` | | | | | | | Métricas Cloud pendentes |
+| 2 publish-h360-both | | `RM_ZJWhAreMYCDi` | | | | | | | Paciente + web; métricas Cloud pendentes |
+| 3 dynacast | | | | | | | | |
 | 4 adaptive-stream | | | | | | | | |
 | 5 videotrack | | | | | | | | |
 | 6 adaptive-ui | | | | | | | | |
