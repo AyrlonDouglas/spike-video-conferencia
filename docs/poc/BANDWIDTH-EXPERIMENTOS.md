@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 4 implementado (`adaptiveStream` + dynacast + h360) · aguardando medição |
+| **Status** | Exp 5 implementado (`VideoTrack` no paciente + Exps 1–4) · aguardando medição |
 
 ---
 
@@ -127,7 +127,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 2 publish-h360-both | | `RM_ZJWhAreMYCDi` | | | | | | | Paciente + web; métricas Cloud pendentes |
 | 3 dynacast | | `RM_wLVgDapJvXcj` | | | | | | | h360 + dynacast; métricas Cloud pendentes |
 | 4 adaptive-stream | | `RM_k7a7wThdTnmV` | | | | | | | h360 + dynacast + adaptiveStream; métricas pendentes |
-| 5 videotrack | | | | | | | | |
+| 5 videotrack | | `RM_hV3F964heLmn` | | | | | | | RN VideoTrack + trackRef; métricas pendentes |
 | 6 adaptive-ui | | | | | | | | |
 | 7 quality-low-remote | | | | | | | | |
 | 8 audio-red-off | | | | | | | | |
@@ -171,6 +171,10 @@ new Room({
 ```
 
 Web: `track.attach()` em `<video>` já usado em `consulta.component.ts` — adaptive stream deve atuar. RN: efeito limitado até Exp 5 (`VideoTrack`).
+
+### Exp 5 — VideoTrack (só paciente, acumula Exps 1–4)
+
+Trocar `VideoView` por `VideoTrack` com `trackRef` (`@livekit/components-react`) em `app/consulta/[sessionId].tsx` — habilita adaptive stream no RN.
 
 ### Exp 7 — qualidade máxima baixa no remoto
 

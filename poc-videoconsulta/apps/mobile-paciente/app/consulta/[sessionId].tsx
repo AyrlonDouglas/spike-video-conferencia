@@ -2,15 +2,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { AppState, AppStateStatus, Button, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { TrackReference } from '@livekit/components-react';
 import {
   ConnectionState,
-  LocalVideoTrack,
-  RemoteVideoTrack,
   Room,
   RoomEvent,
   Track,
+  type Participant,
+  type RemoteParticipant,
+  type TrackPublication,
 } from 'livekit-client';
-import { AudioSession, VideoView } from '@livekit/react-native';
+import { AudioSession, VideoTrack } from '@livekit/react-native';
 import {
   connectRoomWithLocalMedia,
   createConsultaRoom,
@@ -33,8 +35,25 @@ function isSessionNotFound(err: unknown): boolean {
   return err instanceof Error && err.message === SESSION_NOT_FOUND;
 }
 
-function isCameraVideoPublication(publication: { kind: Track.Kind; source: Track.Source }): boolean {
+function isCameraVideoPublication(publication: {
+  kind: Track.Kind;
+  source: Track.Source;
+}): boolean {
   return publication.kind === Track.Kind.Video && publication.source === Track.Source.Camera;
+}
+
+function cameraTrackRef(
+  participant: Participant,
+  publication: TrackPublication | undefined,
+): TrackReference | undefined {
+  if (!publication || !isCameraVideoPublication(publication) || !publication.track) {
+    return undefined;
+  }
+  return {
+    participant,
+    source: Track.Source.Camera,
+    publication,
+  };
 }
 
 export default function ConsultaPacienteScreen() {
@@ -42,8 +61,8 @@ export default function ConsultaPacienteScreen() {
   const [state, setState] = useState<SessionSnapshot['state']>('criada');
   const [error, setError] = useState<string | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
-  const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | undefined>();
-  const [remoteVideoTracks, setRemoteVideoTracks] = useState<RemoteVideoTrack[]>([]);
+  const [localVideoRef, setLocalVideoRef] = useState<TrackReference | undefined>();
+  const [remoteVideoRefs, setRemoteVideoRefs] = useState<TrackReference[]>([]);
   const [micEnabled, setMicEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -110,26 +129,28 @@ export default function ConsultaPacienteScreen() {
     let poll404Count = 0;
 
     const syncLocalVideo = (targetRoom: Room) => {
-      setLocalVideoTrack(
-        targetRoom.localParticipant.getTrackPublication(Track.Source.Camera)?.videoTrack,
+      setLocalVideoRef(
+        cameraTrackRef(
+          targetRoom.localParticipant,
+          targetRoom.localParticipant.getTrackPublication(Track.Source.Camera),
+        ),
       );
     };
 
-    const addRemoteVideoTrack = (track: RemoteVideoTrack) => {
-      setRemoteVideoTracks((prev) =>
-        prev.some((existing) => existing.sid === track.sid) ? prev : [...prev, track],
+    const addRemoteVideoRef = (participant: RemoteParticipant, publication: TrackPublication) => {
+      const ref = cameraTrackRef(participant, publication);
+      if (!ref) return;
+      const sid = publication.trackSid;
+      setRemoteVideoRefs((prev) =>
+        prev.some((existing) => existing.publication?.trackSid === sid) ? prev : [...prev, ref],
       );
     };
 
     const syncRemoteVideos = (targetRoom: Room) => {
       for (const participant of targetRoom.remoteParticipants.values()) {
         for (const publication of participant.trackPublications.values()) {
-          if (
-            publication.isSubscribed &&
-            isCameraVideoPublication(publication) &&
-            publication.videoTrack instanceof RemoteVideoTrack
-          ) {
-            addRemoteVideoTrack(publication.videoTrack);
+          if (publication.isSubscribed && isCameraVideoPublication(publication)) {
+            addRemoteVideoRef(participant, publication);
           }
         }
       }
@@ -137,25 +158,28 @@ export default function ConsultaPacienteScreen() {
 
     const setupRoomListeners = (targetRoom: Room) => {
       targetRoom.on(RoomEvent.LocalTrackPublished, (publication) => {
-        if (isCameraVideoPublication(publication) && publication.videoTrack) {
-          setLocalVideoTrack(publication.videoTrack);
+        if (isCameraVideoPublication(publication)) {
+          setLocalVideoRef(cameraTrackRef(targetRoom.localParticipant, publication));
         }
         syncMediaControls(targetRoom);
       });
       targetRoom.on(RoomEvent.LocalTrackUnpublished, (publication) => {
         if (publication.source === Track.Source.Camera) {
-          setLocalVideoTrack(undefined);
+          setLocalVideoRef(undefined);
         }
         syncMediaControls(targetRoom);
       });
-      targetRoom.on(RoomEvent.TrackSubscribed, (track, publication) => {
+      targetRoom.on(RoomEvent.TrackSubscribed, (_track, publication, participant) => {
         if (isCameraVideoPublication(publication)) {
-          addRemoteVideoTrack(track as RemoteVideoTrack);
+          addRemoteVideoRef(participant, publication);
         }
       });
-      targetRoom.on(RoomEvent.TrackUnsubscribed, (track, publication) => {
+      targetRoom.on(RoomEvent.TrackUnsubscribed, (_track, publication) => {
         if (publication.kind === Track.Kind.Video) {
-          setRemoteVideoTracks((prev) => prev.filter((existing) => existing.sid !== track.sid));
+          const sid = publication.trackSid;
+          setRemoteVideoRefs((prev) =>
+            prev.filter((existing) => existing.publication?.trackSid !== sid),
+          );
         }
       });
       targetRoom.on(RoomEvent.Disconnected, (reason) => {
@@ -190,7 +214,7 @@ export default function ConsultaPacienteScreen() {
 
         setActiveSession({ sessionId, participantId: join.participantId });
         setState(join.state);
-        setRemoteVideoTracks([]);
+        setRemoteVideoRefs([]);
 
         if (!activeRoom) {
           activeRoom = createConsultaRoom();
@@ -319,16 +343,23 @@ export default function ConsultaPacienteScreen() {
           <View style={styles.videos}>
             <View style={styles.videoBlock}>
               <Text style={styles.videoLabel}>Você</Text>
-              {localVideoTrack ? (
-                <VideoView style={styles.video} videoTrack={localVideoTrack} />
+              {localVideoRef ? (
+                <VideoTrack
+                  style={styles.video}
+                  trackRef={localVideoRef}
+                  mirror={facingMode === 'user'}
+                />
               ) : (
                 <View style={[styles.video, styles.videoPlaceholder]} />
               )}
             </View>
-            {remoteVideoTracks.map((track) => (
-              <View key={track.sid} style={styles.videoBlock}>
+            {remoteVideoRefs.map((trackRef) => (
+              <View
+                key={trackRef.publication?.trackSid ?? trackRef.participant.identity}
+                style={styles.videoBlock}
+              >
                 <Text style={styles.videoLabel}>Remoto</Text>
-                <VideoView style={styles.video} videoTrack={track} />
+                <VideoTrack style={styles.video} trackRef={trackRef} />
               </View>
             ))}
           </View>
