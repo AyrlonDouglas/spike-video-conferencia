@@ -93,6 +93,19 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
 **Leitura:** vs Exp 1 (17,9 / 10,9 MB/min), caiu mais **−54% up** e **−50% down** — coerente com o médico também publicando em h360. Melhor custo/benefício até aqui para 1:1.
 
+### Resultado registrado — Exp 3 (2026-05-27)
+
+**Room LiveKit:** `RM_wLVgDapJvXcj` · **mudança:** `dynacast: true` (acumula h360 nos dois lados).
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) |
+|---------|-------|---------------------------|---------------------|
+| Duração | **6 min** | — | — |
+| Upstream | **52,6 MB** | ~8,8 MB/min | **−74%** (34,1 → 8,8) |
+| Downstream | **38,99 MB** | ~6,5 MB/min | **−73%** (24,2 → 6,5) |
+| **Total** | **91,59 MB** | ~15,3 MB/min | **−74%** (58,3 → 15,3) |
+
+**Leitura:** praticamente igual ao Exp 2 (8,2 / 5,4 MB/min) — em 1:1 tela cheia o dynacast **não reduziu** tráfego mensurável (esperado: ambos consomem camada alta). Δ vs Exp 2: **+7% up**, **+20% down** (variação de sessão/medição, não ganho claro).
+
 ---
 
 ## Ordem dos experimentos (atômicos)
@@ -138,7 +151,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 0 baseline | 2026-05-27 | `RM_fd6nQgmSn6UF` | 64 min | 2,18 GB (34,1 MB/min) | 1,55 GB (24,2 MB/min) | — | — | — | Cloud; código default; 1:1 |
 | 1 publish-h360 | 2026-05-27 | `RM_sZcrpj3cuFEB` | 6 min | 107,48 MB (17,9 MB/min) | 65,09 MB (10,9 MB/min) | **−48%** | **−55%** | — | Só paciente h360; baseline 64 min |
 | 2 publish-h360-both | 2026-05-27 | `RM_ZJWhAreMYCDi` | 6 min | 49,2 MB (8,2 MB/min) | 32,57 MB (5,4 MB/min) | **−76%** | **−78%** | — | h360 paciente + web |
-| 3 dynacast | | `RM_wLVgDapJvXcj` | | | | | | | h360 + dynacast; métricas Cloud pendentes |
+| 3 dynacast | 2026-05-27 | `RM_wLVgDapJvXcj` | 6 min | 52,6 MB (8,8 MB/min) | 38,99 MB (6,5 MB/min) | **−74%** | **−73%** | — | h360 + dynacast; ~Exp 2 |
 | 4 adaptive-stream | | `RM_k7a7wThdTnmV` | | | | | | | h360 + dynacast + adaptiveStream; métricas pendentes |
 | 5 videotrack | | `RM_hV3F964heLmn` | | | | | | | RN VideoTrack + trackRef; métricas pendentes |
 | 6 adaptive-ui | | | | | | | | |
