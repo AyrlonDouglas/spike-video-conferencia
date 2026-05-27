@@ -420,6 +420,80 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 
 ---
 
+## Comparativo de custo LiveKit (baseline operacional)
+
+Estimativa de OPEX **LiveKit Cloud Ship** a partir dos **MB/min de downstream** medidos nos Exps (upstream não entra na cobrança de bandwidth). Premissas alinhadas ao [SPIKE-PROVIDER.md](../../SPIKE-PROVIDER.md) §5.
+
+### Premissas de operação
+
+| Variável | Valor |
+|----------|-------|
+| Consultas/dia | 20 |
+| Duração média | 60 min |
+| Participantes por consulta | 2 (paciente + médico) |
+| **Participant-min/mês** | **72.000** |
+| **Room-min/mês** | **36.000** |
+
+### Modelo LiveKit Ship ([pricing](https://livekit.io/pricing), mai/2026)
+
+| Componente | Incluso no Ship | Excedente |
+|------------|-----------------|-----------|
+| Plano fixo | US$ 50/mês | — |
+| WebRTC minutes | 150.000 min | US$ 0,0005/min |
+| **Downstream bandwidth** | **250 GB** | **US$ 0,12/GB** |
+
+**Fórmulas:**
+
+```
+Downstream_GB/mês = (MB/min medido) × 36.000 room-min ÷ 1.024
+Custo bandwidth   = max(0, Downstream_GB − 250) × US$ 0,12
+Custo Ship/mês    = US$ 50 + excedente WebRTC + excedente bandwidth
+```
+
+No baseline (72k participant-min), **não há excedente de minutos** — o custo variável vem do downstream acima de 250 GB.
+
+### Custo por configuração — volume baseline (20 consultas/dia)
+
+| Config | Exp | Down (MB/min) | Down (GB/mês) | Excedente BW | **Custo Ship/mês** | vs Exp 0 | vs SPIKE (~US$ 52)* |
+|--------|-----|---------------|---------------|--------------|-------------------|----------|---------------------|
+| SPIKE teórico (~500 kbps) | — | ~7,7 | ~270 | ~US$ 2 | **~US$ 52** | — | referência desk research |
+| **Código default (720p)** | **0** | **24,2** | **~851** | **~US$ 72** | **~US$ 122** | — | **+135%** |
+| h360 só paciente | 1 | 10,9 | ~383 | ~US$ 16 | **~US$ 66** | −46% | +27% |
+| **h360 ambos** | **2** | **5,4** | **~190** | US$ 0 | **US$ 50** | **−59%** | **−4%** |
+| h360 + adaptiveStream | 4 | 3,8 | ~134 | US$ 0 | **US$ 50** | −59% | −4% |
+| h360 + stack (Exp 5–6) | 5–6 | ~5,4 | ~190 | US$ 0 | **US$ 50** | −59% | −4% |
+| h360 + LOW remoto (mobile) | 7 | 3,1 | ~109 | US$ 0 | **US$ 50** | −59% | −4% |
+| h540 ambos | 10 | 4,7 | ~165 | US$ 0 | **US$ 50** | −59% | −4% |
+| h540 + MEDIUM (12–13) | 12–13 | ~5,6 | ~195 | US$ 0 | **US$ 50** | −59% | −4% |
+| h540 + HIGH simétrico | 14 | 7,4 | ~260 | ~US$ 1 | **~US$ 51** | −58% | −2% |
+
+\* Estimativa original do SPIKE antes dos experimentos PoC.
+
+**Por consulta (60 min, baseline):** Exp 0 ~**US$ 0,20** · Exp 2 (h360) ~**US$ 0,083** · Exp 14 (h540+HIGH) ~**US$ 0,085**.
+
+**Economia anual Exp 0 → Exp 2:** ~(US$ 122 − US$ 50) × 12 ≈ **US$ 864/ano** só em LiveKit Cloud, no volume baseline.
+
+### Escala de volume (configurações-chave)
+
+| Cenário | Participant-min/mês | Exp 0 (default) | Exp 2 (h360) | Exp 14 (h540+HIGH) | SPIKE (estimado) |
+|---------|---------------------|-----------------|--------------|--------------------|------------------|
+| **Baseline** (20/dia) | 72.000 | **~US$ 122** | **US$ 50** | **~US$ 51** | ~US$ 52 |
+| **2×** (40/dia) | 144.000 | **~US$ 224** | **~US$ 66** | **~US$ 82** | ~US$ 85 |
+| **10×** (200/dia) | 720.000 | **~US$ 1.326** | **~US$ 533** | **~US$ 617** | ~US$ 629 |
+
+No **10×**, entra excedente de WebRTC minutes: (720k − 150k) × US$ 0,0005 = **+US$ 285/mês** em todos os cenários.
+
+### Leitura
+
+1. **SPIKE vs PoC:** desk research assumia ~270 GB/mês (~7,7 MB/min). Exp 2 mediu **~190 GB** (~5,4 MB/min) — **abaixo** dos 250 GB inclusos → **US$ 50/mês flat** (só o plano).
+2. **Default 720p (Exp 0)** custaria **~US$ 122/mês** no baseline — **2,4×** o h360 otimizado.
+3. **Entre h360 e h540 no baseline**, diferença de custo é **marginal** (tudo cabe nos 250 GB). A distinção aparece em escala: h360 → h540+HIGH no 10× = **+US$ 84/mês**.
+4. **Gatilho P1 self-host:** a partir de ~200 consultas/dia, LiveKit Ship ~US$ 533–617/mês vs self-host ~US$ 150–400 fixo ([SPIKE-PROVIDER.md](../../SPIKE-PROVIDER.md) §5).
+
+**Não modelado:** lobby/no-show, gravação, egress, inferência/AI.
+
+---
+
 ## Snippets de referência (não aplicar tudo de uma vez)
 
 ### Exp 1 — só publicação h360 (paciente)
@@ -497,6 +571,7 @@ await room.localParticipant.setMicrophoneEnabled(true, undefined, AUDIO_PUBLISH_
 | Exp 3–4 ~0% em tela cheia | Manter ligados “de graça” (custo CPU baixo) ou só ativar com PiP (Exp 6) |
 | Exp 6 + 4/5 mostram ganho | Layout com preview pequeno no app paciente |
 | Exp 8 ↓ pouco e áudio piora | Manter RED ligado |
+| Custo LiveKit baseline (§ comparativo) | **h360 (Exp 2) = US$ 50/mês** vs default **~US$ 122/mês** |
 
 Consolidar escolhas no [SPIKE-RESUMO-EXECUTIVO.md](../SPIKE-RESUMO-EXECUTIVO.md) ou ADR quando fechar a série.
 
