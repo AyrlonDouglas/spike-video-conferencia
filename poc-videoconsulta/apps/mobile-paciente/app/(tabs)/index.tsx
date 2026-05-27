@@ -27,8 +27,11 @@ export default function HomeScreen() {
         const snapshot = await getSession(active.sessionId);
         if (snapshot.state === 'encerrada' || snapshot.state === 'vetada') return;
         router.replace(`/consulta/${active.sessionId}`);
-      } catch {
-        // Sessão expirou ou orquestrador indisponível — permanece na home.
+      } catch (err) {
+        console.error('[home] Erro ao restaurar sessão ativa', {
+          sessionId: active.sessionId,
+          err,
+        });
       }
     })();
   }, []);
@@ -40,6 +43,7 @@ export default function HomeScreen() {
       const session = await createSession();
       router.push(`/consulta/${session.id}`);
     } catch (err) {
+      console.error('[home] Erro ao criar sessão', { err });
       setError(err instanceof Error ? err.message : 'Erro ao criar sessão');
     } finally {
       setLoading(false);

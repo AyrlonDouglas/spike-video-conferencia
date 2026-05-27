@@ -6,21 +6,40 @@ export async function connectRoomWithLocalMedia(
   token: string,
   isStale: () => boolean,
 ): Promise<void> {
-  await room.connect(wsUrl, token);
+  try {
+    await room.connect(wsUrl, token);
+  } catch (err) {
+    console.error('[livekit] Erro ao conectar na sala', { wsUrl, err });
+    throw err;
+  }
   if (isStale()) {
     await room.disconnect();
     return;
   }
 
-  await waitForConnected(room, isStale);
+  try {
+    await waitForConnected(room, isStale);
+  } catch (err) {
+    console.error('[livekit] Conexão encerrada antes de publicar mídia', {
+      wsUrl,
+      state: room.state,
+      err,
+    });
+    throw err;
+  }
   if (isStale()) {
     await room.disconnect();
     return;
   }
 
-  await room.localParticipant.setMicrophoneEnabled(true);
-  if (isStale()) return;
-  await room.localParticipant.setCameraEnabled(true);
+  try {
+    await room.localParticipant.setMicrophoneEnabled(true);
+    if (isStale()) return;
+    await room.localParticipant.setCameraEnabled(true);
+  } catch (err) {
+    console.error('[livekit] Erro ao habilitar mídia local', { err });
+    throw err;
+  }
 }
 
 function waitForConnected(room: Room, isStale: () => boolean): Promise<void> {

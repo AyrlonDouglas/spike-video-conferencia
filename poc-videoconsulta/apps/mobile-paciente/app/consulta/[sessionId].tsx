@@ -155,8 +155,9 @@ export default function ConsultaPacienteScreen() {
           setRemoteVideoTracks((prev) => prev.filter((existing) => existing.sid !== track.sid));
         }
       });
-      targetRoom.on(RoomEvent.Disconnected, () => {
+      targetRoom.on(RoomEvent.Disconnected, (reason) => {
         if (cancelled || reconnecting) return;
+        console.error('[consulta] Desconectado do LiveKit', { sessionId, reason });
         setConnected(false);
         if (AppState.currentState === 'active') {
           void reconnectLiveKit();
@@ -202,6 +203,7 @@ export default function ConsultaPacienteScreen() {
           router.replace({ pathname: '/', params: { error: SESSION_NOT_FOUND } });
           return;
         }
+        console.error('[consulta] Erro ao reconectar', { sessionId, err });
         setError(err instanceof Error ? err.message : 'Erro ao reconectar');
       } finally {
         reconnecting = false;
@@ -260,6 +262,7 @@ export default function ConsultaPacienteScreen() {
           router.replace({ pathname: '/', params: { error: SESSION_NOT_FOUND } });
           return;
         }
+        console.error('[consulta] Erro ao conectar', { sessionId, err });
         setError(err instanceof Error ? err.message : 'Erro ao conectar');
       }
     })();
