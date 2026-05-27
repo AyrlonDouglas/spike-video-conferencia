@@ -5,7 +5,8 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 8 em medição · room `RM_FwLENn43zHZL` |
+| **Status** | Fase 1 (Exps 0–8) em curso · **Fase 2** (h540) planejada abaixo |
+| **Preset adotado** | **h360** (~450 kbps) nos dois lados + stack Exps 3–8 |
 
 ---
 
@@ -192,6 +193,72 @@ Ordem pensada para: (a) mudança pequena no diff, (b) efeito mensurável em 1:1,
 
 ---
 
+## Fase 2 — Qualidade de imagem (preset intermediário)
+
+Objetivo: comparar **h360 (adotado)** vs **h540 (intermediário)** com o **mesmo stack** de otimizações (dynacast, adaptiveStream, VideoTrack, PiP, etc.). Não é série atômica de novo — só troca o preset de vídeo.
+
+### Presets LiveKit (referência)
+
+| Preset | Resolução típica | Bitrate alvo (~) | Papel na PoC |
+|--------|------------------|------------------|--------------|
+| h180 | 320×180 | ~150 kbps | Muito baixo — fora do escopo |
+| **h360** | 640×360 | **~450 kbps** | **Adotado** (Exps 1–8) |
+| **h540** | 960×540 | **~900 kbps** | **Intermediário** (Fase 2) |
+| h720 | 1280×720 | ~1,7 Mbps | Alto — baseline Exp 0 |
+
+### Referência para comparação (Fase 2)
+
+Use como **linha de base de custo** a configuração já validada com h360 + stack completo, não o Exp 0 cru:
+
+| Referência | Room (exemplo) | Up (MB/min) | Down (MB/min) |
+|------------|----------------|-------------|---------------|
+| h360 + stack | Exp 2 `RM_ZJWhAreMYCDi` | ~8,2 | ~5,4 |
+| h360 + stack (sessões recentes) | Exp 5–6 | ~8,0–8,3 | ~5,1–5,7 |
+
+Calcule também **Δ vs Exp 0** na tabela para manter histórico.
+
+### Exps da Fase 2
+
+| # | ID | Mudança | App | Como aplicar | O que medir |
+|---|-----|---------|-----|--------------|-------------|
+| 10 | `publish-h540-both` | `CONSULTA_VIDEO_PRESET = VideoPresets.h540` | Paciente + web | `livekit-room.ts` nos dois apps | MB/min vs h360+stack; **qualidade subjetiva** |
+| 11 | `publish-h540-patient` *(opcional)* | h540 só no paciente; web mantém h360 | Só mobile | preset h540 no mobile, h360 no web | Isolar custo do uplink do paciente |
+
+**Regra:** um Exp = um preset (10 ou 11). Manter **6–8 min**, mesma rede e roteiro. Preencher coluna **Qualidade (1–5)**:
+
+- Vídeo que o **médico** vê (paciente)
+- Vídeo que o **paciente** vê (médico)
+- Áudio (ambos)
+- Travamentos sim/não
+
+### Roteiro Fase 2
+
+1. Fechar métricas pendentes da Fase 1 (Exps 7–8) com h360.
+2. Em `mobile-paciente` e `web-profissional`, trocar `CONSULTA_VIDEO_PRESET` para `VideoPresets.h540` (Exp 10) ou só no mobile (Exp 11).
+3. Rebuild/reload dos dois apps; **nova** room LiveKit.
+4. Consulta 6–8 min; anotar Cloud + qualidade subjetiva.
+5. Reverter preset para `h360` antes do próximo Exp ou commit.
+
+### Snippet — Exp 10 (h540 nos dois lados)
+
+```typescript
+// mobile-paciente/src/utils/livekit-room.ts e web-profissional/.../livekit-room.ts
+import { VideoPresets } from 'livekit-client';
+
+export const CONSULTA_VIDEO_PRESET = VideoPresets.h540;
+```
+
+### Snippet — Exp 11 (h540 só paciente)
+
+```typescript
+// mobile: CONSULTA_VIDEO_PRESET = VideoPresets.h540;
+// web:   CONSULTA_VIDEO_PRESET = VideoPresets.h360;  // inalterado
+```
+
+**Leitura esperada:** h540 ≈ **2× bitrate** alvo vs h360 → room total pode subir ~30–80% (MB/min), dependendo de simulcast/SFU. Se qualidade subjetiva não melhorar de forma clara, manter **h360** no MVP.
+
+---
+
 ## Roteiro de teste fixo (repetir em todo Exp)
 
 1. Reiniciar orchestrator e apps (cache limpo se possível).
@@ -221,6 +288,10 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 7 quality-low-remote | 2026-05-27 | `RM_abQHGntFmSX5` | | | | | | | LOW no remoto; só mobile; métricas pendentes |
 | 8 audio-red-off | 2026-05-27 | `RM_FwLENn43zHZL` | | | | | | | `red: false` no áudio; só mobile; métricas pendentes |
 | 9 profile-orchestrator | | | | | | | | |
+| 10 publish-h540-both | | | | | | | | | h540 paciente + web; stack Exps 3–8; Fase 2 |
+| 11 publish-h540-patient | | | | | | | | | h540 só paciente *(opcional)*; Fase 2 |
+
+**Como calcular Δ (Fase 2):** além do Exp 0, anotar Δ vs **h360+stack** (~8,2 / ~5,4 MB/min da Exp 2 ou média Exps 5–6).
 
 **Como calcular Δ:** `Δ Up = (MB/min_exp − 34,1) / 34,1 × 100%` (idem para Down com 24,2).
 
@@ -297,7 +368,9 @@ await room.localParticipant.setMicrophoneEnabled(true, undefined, AUDIO_PUBLISH_
 
 | Se… | Então… |
 |-----|--------|
-| Exp 1 mostra ↓ claro sem qualidade ruim | Adotar h360 (ou h540) como default do paciente no MVP |
+| Exp 1–2 + Fase 2: h540 não compensa em qualidade | Manter **h360** no MVP |
+| Fase 2: h540 melhora vídeo sem travar e Δ MB/min aceitável | Avaliar **h540** só no paciente (Exp 11) ou nos dois (Exp 10) |
+| Exp 1 mostra ↓ claro sem qualidade ruim | h360 confirmado como default mínimo |
 | Exp 3–4 ~0% em tela cheia | Manter ligados “de graça” (custo CPU baixo) ou só ativar com PiP (Exp 6) |
 | Exp 6 + 4/5 mostram ganho | Layout com preview pequeno no app paciente |
 | Exp 8 ↓ pouco e áudio piora | Manter RED ligado |
