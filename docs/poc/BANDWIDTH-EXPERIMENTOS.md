@@ -106,6 +106,19 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
 **Leitura:** praticamente igual ao Exp 2 (8,2 / 5,4 MB/min) — em 1:1 tela cheia o dynacast **não reduziu** tráfego mensurável (esperado: ambos consomem camada alta). Δ vs Exp 2: **+7% up**, **+20% down** (variação de sessão/medição, não ganho claro).
 
+### Resultado registrado — Exp 4 (2026-05-27)
+
+**Room LiveKit:** `RM_k7a7wThdTnmV` · **mudança:** `adaptiveStream: true` (acumula h360 + dynacast).
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) |
+|---------|-------|---------------------------|---------------------|
+| Duração | **7 min** | — | — |
+| Upstream | **41,48 MB** | ~5,9 MB/min | **−83%** (34,1 → 5,9) |
+| Downstream | **26,76 MB** | ~3,8 MB/min | **−84%** (24,2 → 3,8) |
+| **Total** | **68,24 MB** | ~9,7 MB/min | **−83%** (58,3 → 9,7) |
+
+**Leitura:** **menor tráfego até aqui** na série de 6–7 min. vs Exp 2: **−28% up**, **−30% down** (MB/min) — adaptive stream pode ter ajudado (web com `attach`; RN ainda com `VideoView`). vs Exp 3: **−33% up**, **−42% down**. Duração 7 min vs 6 min nos outros — comparar sempre por MB/min.
+
 ---
 
 ## Ordem dos experimentos (atômicos)
@@ -152,7 +165,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 1 publish-h360 | 2026-05-27 | `RM_sZcrpj3cuFEB` | 6 min | 107,48 MB (17,9 MB/min) | 65,09 MB (10,9 MB/min) | **−48%** | **−55%** | — | Só paciente h360; baseline 64 min |
 | 2 publish-h360-both | 2026-05-27 | `RM_ZJWhAreMYCDi` | 6 min | 49,2 MB (8,2 MB/min) | 32,57 MB (5,4 MB/min) | **−76%** | **−78%** | — | h360 paciente + web |
 | 3 dynacast | 2026-05-27 | `RM_wLVgDapJvXcj` | 6 min | 52,6 MB (8,8 MB/min) | 38,99 MB (6,5 MB/min) | **−74%** | **−73%** | — | h360 + dynacast; ~Exp 2 |
-| 4 adaptive-stream | | `RM_k7a7wThdTnmV` | | | | | | | h360 + dynacast + adaptiveStream; métricas pendentes |
+| 4 adaptive-stream | 2026-05-27 | `RM_k7a7wThdTnmV` | 7 min | 41,48 MB (5,9 MB/min) | 26,76 MB (3,8 MB/min) | **−83%** | **−84%** | — | + adaptiveStream (VideoView no RN) |
 | 5 videotrack | | `RM_hV3F964heLmn` | | | | | | | RN VideoTrack + trackRef; métricas pendentes |
 | 6 adaptive-ui | | | | | | | | |
 | 7 quality-low-remote | | | | | | | | |
