@@ -345,11 +345,20 @@ export const CONSULTA_VIDEO_PRESET = VideoPresets.h540;
 
 **Comparar com:** Exp 12 — espera-se ↑ downstream total e qualidade simétrica.
 
-### Exp 14 — `quality-high-both-h540` *(doc only — aplicar na hora do teste)*
+### Resultado registrado — Exp 14 (2026-05-27)
 
-**Base:** h540 nos dois. **Mudança:** `setVideoQuality(HIGH)` no remoto em **mobile e web**.
+**Room LiveKit:** `RM_gnQJknNwr2b9` · **mudança:** h540 paciente + web; `setVideoQuality(HIGH)` no remoto — **mobile e web**.
 
-**Comparar com:** Exp 13 — teto ~h540 nos dois lados; referência de qualidade máxima na Fase 2.
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) | Δ vs Exp 13 |
+|---------|-------|---------------------------|---------------------|-------------|
+| Duração | *(pendente)* | — | — | — |
+| Upstream | *(pendente)* | | | |
+| Downstream | *(pendente)* | | | |
+| **Total** | *(pendente)* | | | |
+
+**Qualidade subjetiva:** *(pendente)* — vídeo médico→paciente, paciente→médico, áudio, travamentos.
+
+**Comparar com:** Exp 13 — espera-se ↑ downstream; qualidade simétrica no teto (~540p). Referência também vs Exp 2 (h360+stack) e Exp 10 (h540 sem cap).
 
 ---
 
@@ -386,7 +395,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 11 publish-h540-patient | | | | | | | | | h540 só paciente *(opcional)*; Fase 2 |
 | 12 quality-medium-remote-h540 | 2026-05-27 | `RM_rACxcmtEShGm` | | | | | | | MEDIUM remoto; só mobile; h540 |
 | 13 quality-medium-both-h540 | 2026-05-27 | `RM_8ukc4mPaVAks` | | | | | | | MEDIUM remoto; paciente + web; h540 |
-| 14 quality-high-both-h540 | | | | | | | | | HIGH remoto; paciente + web; h540 |
+| 14 quality-high-both-h540 | 2026-05-27 | `RM_gnQJknNwr2b9` | | | | | | | HIGH remoto; paciente + web; h540 |
 
 **Como calcular Δ (Fase 2):** além do Exp 0, anotar Δ vs **h360+stack** (~8,2 / ~5,4 MB/min da Exp 2 ou média Exps 5–6).
 

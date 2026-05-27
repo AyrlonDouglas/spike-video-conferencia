@@ -220,7 +220,7 @@ export class ConsultaComponent implements AfterViewInit, OnDestroy {
   private attachRemoteTrack(publication: RemoteTrackPublication): void {
     if (publication.kind === Track.Kind.Video && this.remoteVideoRef) {
       if (publication.source === Track.Source.Camera) {
-        publication.setVideoQuality(VideoQuality.MEDIUM);
+        publication.setVideoQuality(VideoQuality.HIGH);
       }
       publication.videoTrack?.attach(this.remoteVideoRef.nativeElement);
       this.hasRemoteVideo.set(true);
