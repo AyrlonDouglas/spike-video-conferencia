@@ -7,7 +7,7 @@ import {
   type RoomConnectOptions,
 } from 'livekit-client';
 
-/** Exps 2–4 (bandwidth) — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
+/** Exps 2–6 (bandwidth) — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
 export function createConsultaRoom(): Room {
   return new Room({
     disconnectOnPageLeave: false,

@@ -41,6 +41,7 @@ export class ConsultaComponent implements AfterViewInit, OnDestroy {
   protected readonly connected = signal(false);
   protected readonly micEnabled = signal(true);
   protected readonly cameraEnabled = signal(true);
+  protected readonly hasRemoteVideo = signal(false);
 
   private room?: Room;
   private pollTimer?: ReturnType<typeof setInterval>;
@@ -219,6 +220,7 @@ export class ConsultaComponent implements AfterViewInit, OnDestroy {
   private attachRemoteTrack(publication: RemoteTrackPublication): void {
     if (publication.kind === Track.Kind.Video && this.remoteVideoRef) {
       publication.videoTrack?.attach(this.remoteVideoRef.nativeElement);
+      this.hasRemoteVideo.set(true);
       return;
     }
     if (publication.kind === Track.Kind.Audio && this.remoteAudioRef) {
@@ -230,6 +232,7 @@ export class ConsultaComponent implements AfterViewInit, OnDestroy {
     if (publication.kind === Track.Kind.Video) {
       const element = this.remoteVideoRef?.nativeElement;
       if (element) publication.videoTrack?.detach(element);
+      this.hasRemoteVideo.set(false);
       return;
     }
     if (publication.kind === Track.Kind.Audio) {

@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 5 implementado (`VideoTrack` no paciente + Exps 1–4) · aguardando medição |
+| **Status** | Exp 6 em medição · room `RM_q3wYiMAJstVF` |
 
 ---
 
@@ -119,6 +119,18 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
 **Leitura:** **menor tráfego até aqui** na série de 6–7 min. vs Exp 2: **−28% up**, **−30% down** (MB/min) — adaptive stream pode ter ajudado (web com `attach`; RN ainda com `VideoView`). vs Exp 3: **−33% up**, **−42% down**. Duração 7 min vs 6 min nos outros — comparar sempre por MB/min.
 
+### Resultado registrado — Exp 6 (em andamento)
+
+**Room LiveKit:** `RM_q3wYiMAJstVF` · **mudança:** layout PiP (remoto fullscreen + local pequeno) paciente + web; web com `object-fit: contain` no vídeo remoto (quadro vertical inteiro).
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 |
+|---------|-------|---------------------------|------------|
+| Duração | *pendente* | — | — |
+| Upstream | *pendente* | — | — |
+| Downstream | *pendente* | — | — |
+
+*(Acumula Exps 1–5 no código atual.)*
+
 ---
 
 ## Ordem dos experimentos (atômicos)
@@ -167,7 +179,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 3 dynacast | 2026-05-27 | `RM_wLVgDapJvXcj` | 6 min | 52,6 MB (8,8 MB/min) | 38,99 MB (6,5 MB/min) | **−74%** | **−73%** | — | h360 + dynacast; ~Exp 2 |
 | 4 adaptive-stream | 2026-05-27 | `RM_k7a7wThdTnmV` | 7 min | 41,48 MB (5,9 MB/min) | 26,76 MB (3,8 MB/min) | **−83%** | **−84%** | — | + adaptiveStream (VideoView no RN) |
 | 5 videotrack | | `RM_hV3F964heLmn` | | | | | | | RN VideoTrack + trackRef; métricas pendentes |
-| 6 adaptive-ui | | | | | | | | |
+| 6 adaptive-ui | 2026-05-27 | `RM_q3wYiMAJstVF` | | | | | | | PiP + web `object-fit: contain`; métricas pendentes |
 | 7 quality-low-remote | | | | | | | | |
 | 8 audio-red-off | | | | | | | | |
 | 9 profile-orchestrator | | | | | | | | |
@@ -214,6 +226,11 @@ Web: `track.attach()` em `<video>` já usado em `consulta.component.ts` — adap
 ### Exp 5 — VideoTrack (só paciente, acumula Exps 1–4)
 
 Trocar `VideoView` por `VideoTrack` com `trackRef` (`@livekit/components-react`) em `app/consulta/[sessionId].tsx` — habilita adaptive stream no RN.
+
+### Exp 6 — layout PiP (paciente + web, acumula Exps 1–5)
+
+- **Paciente:** remoto em tela cheia; preview local 112×150 no canto (`videoStage` / `localPip`).
+- **Web:** `.video-stage` com remoto grande e `.local-pip` ~200×150; antes do remoto, local em tela cheia.
 
 ### Exp 7 — qualidade máxima baixa no remoto
 

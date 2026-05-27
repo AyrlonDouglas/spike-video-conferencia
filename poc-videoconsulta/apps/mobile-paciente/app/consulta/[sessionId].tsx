@@ -324,6 +324,8 @@ export default function ConsultaPacienteScreen() {
           ? 'Aguardando médico…'
           : 'Conectando…';
 
+  const primaryRemoteRef = remoteVideoRefs[0];
+
   return (
     <>
       <Stack.Screen
@@ -340,28 +342,28 @@ export default function ConsultaPacienteScreen() {
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {room ? (
-          <View style={styles.videos}>
-            <View style={styles.videoBlock}>
-              <Text style={styles.videoLabel}>Você</Text>
-              {localVideoRef ? (
+          <View style={styles.videoStage}>
+            {primaryRemoteRef ? (
+              <VideoTrack style={styles.remoteVideo} trackRef={primaryRemoteRef} />
+            ) : localVideoRef ? (
+              <VideoTrack
+                style={styles.remoteVideo}
+                trackRef={localVideoRef}
+                mirror={facingMode === 'user'}
+              />
+            ) : (
+              <View style={[styles.remoteVideo, styles.videoPlaceholder]} />
+            )}
+            {localVideoRef && primaryRemoteRef ? (
+              <View style={styles.localPip}>
                 <VideoTrack
-                  style={styles.video}
+                  style={styles.pipVideo}
                   trackRef={localVideoRef}
                   mirror={facingMode === 'user'}
+                  zOrder={1}
                 />
-              ) : (
-                <View style={[styles.video, styles.videoPlaceholder]} />
-              )}
-            </View>
-            {remoteVideoRefs.map((trackRef) => (
-              <View
-                key={trackRef.publication?.trackSid ?? trackRef.participant.identity}
-                style={styles.videoBlock}
-              >
-                <Text style={styles.videoLabel}>Remoto</Text>
-                <VideoTrack style={styles.video} trackRef={trackRef} />
               </View>
-            ))}
+            ) : null}
           </View>
         ) : null}
         {connected ? (
@@ -409,10 +411,37 @@ const styles = StyleSheet.create({
   statusActive: { backgroundColor: '#d1e7dd' },
   statusText: { fontSize: 16 },
   error: { color: '#b00020' },
-  videos: { flex: 1, gap: 12 },
-  videoBlock: { flex: 1, gap: 4 },
-  videoLabel: { fontSize: 14, fontWeight: '600' },
-  video: { flex: 1, borderRadius: 8, backgroundColor: '#111', minHeight: 160 },
+  videoStage: {
+    flex: 1,
+    minHeight: 280,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#111',
+  },
+  remoteVideo: {
+    width: '100%',
+    height: '100%',
+    minHeight: 280,
+    backgroundColor: '#111',
+  },
+  localPip: {
+    position: 'absolute',
+    right: 12,
+    bottom: 12,
+    width: 112,
+    height: 150,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: '#111',
+    zIndex: 2,
+    elevation: 4,
+  },
+  pipVideo: {
+    width: '100%',
+    height: '100%',
+  },
   videoPlaceholder: { backgroundColor: '#222' },
   controls: {
     flexDirection: 'row',

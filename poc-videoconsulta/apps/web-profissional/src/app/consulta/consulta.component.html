@@ -22,20 +22,21 @@
 
   <audio #remoteAudio autoplay playsinline hidden></audio>
 
-  <div class="videos">
-    <div>
-      <h2>Você</h2>
+  <div class="video-stage">
+    <div class="remote-main" [class.remote-waiting]="!hasRemoteVideo()">
+      <h2 class="video-heading">Remoto</h2>
+      <video #remoteVideo autoplay playsinline class="remote-video"></video>
+    </div>
+    <div class="local-pip" [class.local-full]="!hasRemoteVideo()">
+      <h2 class="video-heading pip-heading">Você</h2>
       <video
         #localVideo
         autoplay
         playsinline
         muted
+        [class]="hasRemoteVideo() ? 'pip-video' : 'remote-video'"
         [class.video-off]="connected() && !cameraEnabled()"
       ></video>
-    </div>
-    <div>
-      <h2>Remoto</h2>
-      <video #remoteVideo autoplay playsinline></video>
     </div>
   </div>
 
