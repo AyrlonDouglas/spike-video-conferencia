@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Fase 1 (Exps 0–8) em curso · **Fase 2** (h540) planejada abaixo |
+| **Status** | Fase 1 (Exps 0–8) **concluída** · **Fase 2** (h540) planejada abaixo |
 | **Preset adotado** | **h360** (~450 kbps) nos dois lados + stack Exps 3–8 |
 
 ---
@@ -146,27 +146,33 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
 **Leitura:** vs Exp 5 (8,0 / 5,1 MB/min): **+4% up**, **+12% down** — PiP + `contain` **sem ganho mensurável** na room (variação de sessão). vs Exp 4 (5,9 / 3,8): **+41% up**, **+50% down** — pior que o menor da série; remoto segue fullscreen nos dois lados, então adaptive stream no preview local pequeno não apareceu no agregado Cloud. Duração 8 min vs 6–7 min nos outros — comparar por MB/min.
 
-### Resultado registrado — Exp 7 (em andamento)
+### Resultado registrado — Exp 7 (2026-05-27)
 
 **Room LiveKit:** `RM_abQHGntFmSX5` · **mudança:** `setVideoQuality(VideoQuality.LOW)` no vídeo remoto da câmera — **só** `mobile-paciente` (`[sessionId].tsx`).
 
-| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 |
-|---------|-------|---------------------------|------------|
-| Duração | *pendente* | — | — |
-| Upstream | *pendente* | — | — |
-| Downstream | *pendente* | — | — |
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) |
+|---------|-------|---------------------------|---------------------|
+| Duração | **7 min** | — | — |
+| Upstream | **52,58 MB** | ~7,5 MB/min | **−78%** (34,1 → 7,5) |
+| Downstream | **21,67 MB** | ~3,1 MB/min | **−87%** (24,2 → 3,1) |
+| **Total** | **74,25 MB** | ~10,6 MB/min | **−82%** (58,3 → 10,6) |
+
+**Leitura:** **menor downstream da série** (3,1 MB/min vs 3,8 no Exp 4) — coerente com o paciente pedindo camada LOW no vídeo remoto do médico. Upstream ~7,5 MB/min (entre Exp 4 e Exp 5–6). vs Exp 6 (8,3 / 5,7 MB/min): **−10% up**, **−46% down**. vs Exp 4 (5,9 / 3,8): **+27% up**, **−18% down** — ganho claro no downlink agregado da room; uplink sem mudança esperada (ajuste só na assinatura do paciente). Duração 7 min — comparar por MB/min.
 
 *(Acumula Exps 1–6 no código atual.)*
 
-### Resultado registrado — Exp 8 (em andamento)
+### Resultado registrado — Exp 8 (2026-05-27)
 
 **Room LiveKit:** `RM_FwLENn43zHZL` · **mudança:** `red: false` em `publishDefaults` + `setMicrophoneEnabled` — **só** `mobile-paciente`.
 
-| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 |
-|---------|-------|---------------------------|------------|
-| Duração | *pendente* | — | — |
-| Upstream | *pendente* | — | — |
-| Downstream | *pendente* | — | — |
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) |
+|---------|-------|---------------------------|---------------------|
+| Duração | **8 min** | — | — |
+| Upstream | **65,29 MB** | ~8,2 MB/min | **−76%** (34,1 → 8,2) |
+| Downstream | **31,42 MB** | ~3,9 MB/min | **−84%** (24,2 → 3,9) |
+| **Total** | **96,71 MB** | ~12,1 MB/min | **−79%** (58,3 → 12,1) |
+
+**Leitura:** tráfego na faixa Exp 5–6 (8,0–8,3 / 5,1–5,7 MB/min), **acima** do Exp 7 (7,5 / 3,1) — **+9% up**, **+26% down** vs Exp 7. `red: false` no áudio do paciente **não apareceu como ↓ mensurável** no agregado Cloud (áudio é fração pequena do total; variação de sessão/duração pode mascarar). vs Exp 0: **−76% / −84%** — ganho estrutural continua vindo de h360 + stack (Exps 1–7). Avaliar qualidade de áudio subjetivamente antes de manter RED desligado.
 
 *(Acumula Exps 1–7 no código atual.)*
 
@@ -233,7 +239,7 @@ Calcule também **Δ vs Exp 0** na tabela para manter histórico.
 
 ### Roteiro Fase 2
 
-1. Fechar métricas pendentes da Fase 1 (Exps 7–8) com h360.
+1. ~~Fechar métricas pendentes da Fase 1 (Exps 7–8) com h360.~~ *(concluído 2026-05-27)*
 2. Em `mobile-paciente` e `web-profissional`, trocar `CONSULTA_VIDEO_PRESET` para `VideoPresets.h540` (Exp 10) ou só no mobile (Exp 11).
 3. Rebuild/reload dos dois apps; **nova** room LiveKit.
 4. Consulta 6–8 min; anotar Cloud + qualidade subjetiva.
@@ -285,8 +291,8 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 4 adaptive-stream | 2026-05-27 | `RM_k7a7wThdTnmV` | 7 min | 41,48 MB (5,9 MB/min) | 26,76 MB (3,8 MB/min) | **−83%** | **−84%** | — | + adaptiveStream (VideoView no RN) |
 | 5 videotrack | 2026-05-27 | `RM_hV3F964heLmn` | 6 min | 47,92 MB (8,0 MB/min) | 30,74 MB (5,1 MB/min) | **−77%** | **−79%** | — | VideoTrack no RN; ~Exp 2–4 |
 | 6 adaptive-ui | 2026-05-27 | `RM_q3wYiMAJstVF` | 8 min | 66,2 MB (8,3 MB/min) | 45,34 MB (5,7 MB/min) | **−76%** | **−77%** | — | PiP + contain; ~Exp 5 |
-| 7 quality-low-remote | 2026-05-27 | `RM_abQHGntFmSX5` | | | | | | | LOW no remoto; só mobile; métricas pendentes |
-| 8 audio-red-off | 2026-05-27 | `RM_FwLENn43zHZL` | | | | | | | `red: false` no áudio; só mobile; métricas pendentes |
+| 7 quality-low-remote | 2026-05-27 | `RM_abQHGntFmSX5` | 7 min | 52,58 MB (7,5 MB/min) | 21,67 MB (3,1 MB/min) | **−78%** | **−87%** | — | LOW no remoto; só mobile; ↓ down claro |
+| 8 audio-red-off | 2026-05-27 | `RM_FwLENn43zHZL` | 8 min | 65,29 MB (8,2 MB/min) | 31,42 MB (3,9 MB/min) | **−76%** | **−84%** | — | `red: false` só mobile; ~Exp 5–6; sem ↓ vs Exp 7 |
 | 9 profile-orchestrator | | | | | | | | |
 | 10 publish-h540-both | | | | | | | | | h540 paciente + web; stack Exps 3–8; Fase 2 |
 | 11 publish-h540-patient | | | | | | | | | h540 só paciente *(opcional)*; Fase 2 |
