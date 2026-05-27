@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 0 concluído · próximo: **Exp 1** (`publish-h360` paciente) |
+| **Status** | Exp 2 implementado (`publish-h360` paciente + web) · aguardando medição |
 
 ---
 
@@ -39,6 +39,8 @@
 Só depois disso avance para **Exp 1**.
 
 ### Resultado registrado — Exp 0 (2026-05-27)
+
+**Room LiveKit:** `RM_fd6nQgmSn6UF`
 
 Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
@@ -105,12 +107,12 @@ Ordem pensada para: (a) mudança pequena no diff, (b) efeito mensurável em 1:1,
 
 Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 
-| Exp | Data | Duração | Upstream | Downstream | Δ Up vs baseline | Δ Down vs baseline | Qualidade (1–5) | Observações |
-|-----|------|---------|----------|------------|------------------|---------------------|-----------------|-------------|
-| 0 baseline | 2026-05-27 | 64 min | 2,18 GB (34,1 MB/min) | 1,55 GB (24,2 MB/min) | — | — | — | Cloud; código default; 1:1 |
-| 1 publish-h360 | | | | | | | | Só paciente |
-| 2 publish-h360-both | | | | | | | | |
-| 3 dynacast | | | | | | | | |
+| Exp | Data | Room LiveKit | Duração | Upstream | Downstream | Δ Up vs baseline | Δ Down vs baseline | Qualidade (1–5) | Observações |
+|-----|------|--------------|---------|----------|------------|------------------|---------------------|-----------------|-------------|
+| 0 baseline | 2026-05-27 | `RM_fd6nQgmSn6UF` | 64 min | 2,18 GB (34,1 MB/min) | 1,55 GB (24,2 MB/min) | — | — | — | Cloud; código default; 1:1 |
+| 1 publish-h360 | | `RM_sZcrpj3cuFEB` | | | | | | | Só paciente; métricas Cloud pendentes |
+| 2 publish-h360-both | | | | | | | | | Paciente + web; métricas Cloud pendentes |
+| 3 dynacast | | `RM_ZJWhAreMYCDi` | | | | | | | Métricas Cloud pendentes |
 | 4 adaptive-stream | | | | | | | | |
 | 5 videotrack | | | | | | | | |
 | 6 adaptive-ui | | | | | | | | |
@@ -128,20 +130,11 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 
 ### Exp 1 — só publicação h360 (paciente)
 
-```typescript
-import { Room, VideoPresets } from 'livekit-client';
+Ver `mobile-paciente/src/utils/livekit-room.ts` → `createConsultaRoom()`.
 
-export function createConsultaRoom(): Room {
-  return new Room({
-    videoCaptureDefaults: {
-      resolution: VideoPresets.h360.resolution,
-    },
-    publishDefaults: {
-      videoEncoding: VideoPresets.h360.encoding,
-    },
-  });
-}
-```
+### Exp 2 — publicação h360 (paciente + web)
+
+Mesmo preset em `web-profissional/src/app/livekit-room.ts` → `createConsultaRoom()` (mantém `disconnectOnPageLeave: false`).
 
 ### Exp 3 — dynacast
 

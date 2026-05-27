@@ -11,8 +11,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RemoteTrackPublication, Room, RoomEvent, Track } from 'livekit-client';
 import type { SessionSnapshot } from '../session.types';
 import {
-  WEB_ROOM_OPTIONS,
   connectRoomWithLocalMedia,
+  createConsultaRoom,
   disconnectReasonLabel,
   disconnectRoom,
 } from '../livekit-room';
@@ -141,7 +141,7 @@ export class ConsultaComponent implements AfterViewInit, OnDestroy {
       if (isStale()) return;
       this.state.set(join.state);
 
-      const room = new Room(WEB_ROOM_OPTIONS);
+      const room = createConsultaRoom();
       this.room = room;
       room.on(RoomEvent.TrackSubscribed, (_track, publication) => {
         this.attachRemoteTrack(publication);

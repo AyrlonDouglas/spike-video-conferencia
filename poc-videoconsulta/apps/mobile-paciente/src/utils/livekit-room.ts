@@ -1,4 +1,16 @@
-import { ConnectionState, Room, RoomEvent } from 'livekit-client';
+import { ConnectionState, Room, RoomEvent, VideoPresets } from 'livekit-client';
+
+/** Exp 1 (bandwidth): publicação h360 — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
+export function createConsultaRoom(): Room {
+  return new Room({
+    videoCaptureDefaults: {
+      resolution: VideoPresets.h360.resolution,
+    },
+    publishDefaults: {
+      videoEncoding: VideoPresets.h360.encoding,
+    },
+  });
+}
 
 export async function connectRoomWithLocalMedia(
   room: Room,

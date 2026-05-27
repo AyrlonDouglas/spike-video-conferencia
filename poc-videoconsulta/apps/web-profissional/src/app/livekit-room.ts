@@ -3,13 +3,22 @@ import {
   DisconnectReason,
   Room,
   RoomEvent,
+  VideoPresets,
   type RoomConnectOptions,
-  type RoomOptions,
 } from 'livekit-client';
 
-export const WEB_ROOM_OPTIONS: RoomOptions = {
-  disconnectOnPageLeave: false,
-};
+/** Exp 2 (bandwidth): publicação h360 — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
+export function createConsultaRoom(): Room {
+  return new Room({
+    disconnectOnPageLeave: false,
+    videoCaptureDefaults: {
+      resolution: VideoPresets.h360.resolution,
+    },
+    publishDefaults: {
+      videoEncoding: VideoPresets.h360.encoding,
+    },
+  });
+}
 
 const CONNECT_OPTIONS: RoomConnectOptions = {
   autoSubscribe: true,

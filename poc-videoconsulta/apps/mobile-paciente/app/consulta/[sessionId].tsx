@@ -11,7 +11,10 @@ import {
   Track,
 } from 'livekit-client';
 import { AudioSession, VideoView } from '@livekit/react-native';
-import { connectRoomWithLocalMedia } from '../../src/utils/livekit-room';
+import {
+  connectRoomWithLocalMedia,
+  createConsultaRoom,
+} from '../../src/utils/livekit-room';
 import type { SessionSnapshot } from '../../src/types/session';
 import {
   getSession,
@@ -190,7 +193,7 @@ export default function ConsultaPacienteScreen() {
         setRemoteVideoTracks([]);
 
         if (!activeRoom) {
-          activeRoom = new Room();
+          activeRoom = createConsultaRoom();
           setupRoomListeners(activeRoom);
           setRoom(activeRoom);
         }
@@ -212,7 +215,7 @@ export default function ConsultaPacienteScreen() {
 
     void (async () => {
       try {
-        activeRoom = new Room();
+        activeRoom = createConsultaRoom();
         setupRoomListeners(activeRoom);
         setRoom(activeRoom);
 
