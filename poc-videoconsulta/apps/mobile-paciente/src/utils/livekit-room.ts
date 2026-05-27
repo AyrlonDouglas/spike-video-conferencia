@@ -1,6 +1,6 @@
 import { ConnectionState, Room, RoomEvent, VideoPresets } from 'livekit-client';
 
-/** Exps 1–6 (bandwidth) — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
+/** Exps 1–7 (bandwidth) — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
 export function createConsultaRoom(): Room {
   return new Room({
     adaptiveStream: true,

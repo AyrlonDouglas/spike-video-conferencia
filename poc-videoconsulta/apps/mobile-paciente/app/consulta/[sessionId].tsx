@@ -8,8 +8,10 @@ import {
   Room,
   RoomEvent,
   Track,
+  VideoQuality,
   type Participant,
   type RemoteParticipant,
+  type RemoteTrackPublication,
   type TrackPublication,
 } from 'livekit-client';
 import { AudioSession, VideoTrack } from '@livekit/react-native';
@@ -40,6 +42,12 @@ function isCameraVideoPublication(publication: {
   source: Track.Source;
 }): boolean {
   return publication.kind === Track.Kind.Video && publication.source === Track.Source.Camera;
+}
+
+/** Exp 7 — qualidade baixa no vídeo remoto (só paciente). */
+function applyRemoteVideoQualityLow(publication: TrackPublication): void {
+  if (!isCameraVideoPublication(publication)) return;
+  (publication as RemoteTrackPublication).setVideoQuality(VideoQuality.LOW);
 }
 
 function cameraTrackRef(
@@ -138,6 +146,7 @@ export default function ConsultaPacienteScreen() {
     };
 
     const addRemoteVideoRef = (participant: RemoteParticipant, publication: TrackPublication) => {
+      applyRemoteVideoQualityLow(publication);
       const ref = cameraTrackRef(participant, publication);
       if (!ref) return;
       const sid = publication.trackSid;

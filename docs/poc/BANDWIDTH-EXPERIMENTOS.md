@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 6 em medição · room `RM_q3wYiMAJstVF` |
+| **Status** | Exp 7 implementado (`quality-low-remote` no paciente) · aguardando medição |
 
 ---
 
@@ -180,7 +180,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 4 adaptive-stream | 2026-05-27 | `RM_k7a7wThdTnmV` | 7 min | 41,48 MB (5,9 MB/min) | 26,76 MB (3,8 MB/min) | **−83%** | **−84%** | — | + adaptiveStream (VideoView no RN) |
 | 5 videotrack | | `RM_hV3F964heLmn` | | | | | | | RN VideoTrack + trackRef; métricas pendentes |
 | 6 adaptive-ui | 2026-05-27 | `RM_q3wYiMAJstVF` | | | | | | | PiP + web `object-fit: contain`; métricas pendentes |
-| 7 quality-low-remote | | | | | | | | |
+| 7 quality-low-remote | | | | | | | | | `setVideoQuality(LOW)` no vídeo remoto; só mobile-paciente |
 | 8 audio-red-off | | | | | | | | |
 | 9 profile-orchestrator | | | | | | | | |
 
