@@ -323,10 +323,12 @@ export const CONSULTA_VIDEO_PRESET = VideoPresets.h540;
 
 | Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) | Δ vs Exp 10 |
 |---------|-------|---------------------------|---------------------|-------------|
-| Duração | *(pendente)* | — | — | — |
-| Upstream | *(pendente)* | | | |
-| Downstream | *(pendente)* | | | |
-| **Total** | *(pendente)* | | | |
+| Duração | **6 min** | — | — | — |
+| Upstream | **111,41 MB** | ~18,6 MB/min | **−45%** (34,1 → 18,6) | **+34%** (13,9 → 18,6) |
+| Downstream | **34,78 MB** | ~5,8 MB/min | **−76%** (24,2 → 5,8) | **+23%** (4,7 → 5,8) |
+| **Total** | **146,19 MB** | ~24,4 MB/min | **−58%** (58,3 → 24,4) | **+32%** (18,5 → 24,4) |
+
+**Leitura:** vs Exp 10 (h540 sem cap): **+34% up**, **+23% down** — MEDIUM só no paciente **não reduziu** tráfego vs Exp 10; uplink sobe com h540 (publicação). vs h360+stack (Exp 2: 8,2 / 5,4 MB/min): **+127% up**, **+7% down**. vs Exp 13 (MEDIUM simétrico: 19,1 / 5,3 MB/min): **−3% up**, **+8% down** — **sem diferença mensurável** entre cap só no mobile vs nos dois lados; total idêntico (~24,4 MB/min). Coerente com variação de sessão ou cap de assinatura não aparecendo no agregado Cloud.
 
 **Qualidade subjetiva:** *(pendente)* — vídeo médico→paciente, paciente→médico, áudio, travamentos.
 
@@ -341,7 +343,7 @@ export const CONSULTA_VIDEO_PRESET = VideoPresets.h540;
 | Downstream | **32,08 MB** | ~5,3 MB/min | **−78%** (24,2 → 5,3) | **+13%** (4,7 → 5,3) |
 | **Total** | **146,57 MB** | ~24,4 MB/min | **−58%** (58,3 → 24,4) | **+32%** (18,5 → 24,4) |
 
-**Leitura:** vs Exp 10 (h540 sem cap de assinatura): **+37% up**, **+13% down** — MEDIUM simétrico nos dois lados **aumentou** tráfego vs Exp 10 (contraintuitivo se MEDIUM capasse camada; pode ser variação de sessão ou simulcast ainda enviando camadas altas no uplink). vs h360+stack (Exp 2: 8,2 / 5,4 MB/min): **+133% up**, **−2% down** — uplink bem mais caro (h540), downlink na mesma faixa. vs Exp 7 (LOW só mobile, h360: 7,5 / 3,1): **+155% up**, **+71% down** — preset h540 domina o custo. **Exp 12 ainda pendente** — comparar quando preenchido (espera-se Exp 13 ≥ down do Exp 12 se MEDIUM no web capar o downlink do médico).
+**Leitura:** vs Exp 10 (h540 sem cap de assinatura): **+37% up**, **+13% down** — MEDIUM simétrico nos dois lados **aumentou** tráfego vs Exp 10 (contraintuitivo se MEDIUM capasse camada; pode ser variação de sessão ou simulcast ainda enviando camadas altas no uplink). vs h360+stack (Exp 2: 8,2 / 5,4 MB/min): **+133% up**, **−2% down** — uplink bem mais caro (h540), downlink na mesma faixa. vs Exp 7 (LOW só mobile, h360: 7,5 / 3,1): **+155% up**, **+71% down** — preset h540 domina o custo. vs Exp 12 (MEDIUM só mobile: 18,6 / 5,8 MB/min): **−3% up**, **−8% down** — **sem ganho mensurável** ao estender MEDIUM ao web; totais ~24,4 MB/min nos dois.
 
 **Qualidade subjetiva:** *(pendente)* — vídeo médico→paciente, paciente→médico, áudio, travamentos.
 
@@ -395,7 +397,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 9 profile-orchestrator | | | | | | | | |
 | 10 publish-h540-both | 2026-05-27 | `RM_zA5C9cjG9HYR` | 6 min | 83,21 MB (13,9 MB/min) | 27,92 MB (4,7 MB/min) | **−59%** | **−81%** | — | h540 ambos; +70% up vs Exp 2; Fase 2 |
 | 11 publish-h540-patient | | | | | | | | | h540 só paciente *(opcional)*; Fase 2 |
-| 12 quality-medium-remote-h540 | 2026-05-27 | `RM_rACxcmtEShGm` | | | | | | | MEDIUM remoto; só mobile; h540 |
+| 12 quality-medium-remote-h540 | 2026-05-27 | `RM_rACxcmtEShGm` | 6 min | 111,41 MB (18,6 MB/min) | 34,78 MB (5,8 MB/min) | **−45%** | **−76%** | — | MEDIUM só mobile; ~Exp 13; Fase 2 |
 | 13 quality-medium-both-h540 | 2026-05-27 | `RM_8ukc4mPaVAks` | 6 min | 114,49 MB (19,1 MB/min) | 32,08 MB (5,3 MB/min) | **−44%** | **−78%** | — | MEDIUM simétrico; +37% up vs Exp 10; Fase 2 |
 | 14 quality-high-both-h540 | 2026-05-27 | `RM_gnQJknNwr2b9` | | | | | | | HIGH remoto; paciente + web; h540 |
 
