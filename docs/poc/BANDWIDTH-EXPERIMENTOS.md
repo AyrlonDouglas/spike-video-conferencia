@@ -67,6 +67,19 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 - Upstream > Downstream é comum em 1:1 com defaults altos: os dois enviam vídeo (muitas vezes 720p + simulcast); o SFU contabiliza upload de cada lado.
 - Qualidade subjetiva / `webrtc-internals` não preenchidos — opcional anotar depois.
 
+### Resultado registrado — Exp 1 (2026-05-27)
+
+**Room LiveKit:** `RM_sZcrpj3cuFEB` · **mudança:** h360 só no paciente (web com defaults).
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) |
+|---------|-------|---------------------------|---------------------|
+| Duração | **6 min** | — | — |
+| Upstream | **107,48 MB** | ~17,9 MB/min | **−48%** (34,1 → 17,9) |
+| Downstream | **65,09 MB** | ~10,9 MB/min | **−55%** (24,2 → 10,9) |
+| **Total** | **172,57 MB** | ~28,8 MB/min | **−51%** (58,3 → 28,8) |
+
+**Leitura:** queda forte no tráfego da room mesmo com web ainda em resolução alta — coerente com ↓ uplink do paciente e ↓ downlink no médico (vídeo remoto do paciente). Duração diferente do baseline (6 vs 64 min); comparação via **MB/min**.
+
 ---
 
 ## Ordem dos experimentos (atômicos)
@@ -110,7 +123,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | Exp | Data | Room LiveKit | Duração | Upstream | Downstream | Δ Up vs baseline | Δ Down vs baseline | Qualidade (1–5) | Observações |
 |-----|------|--------------|---------|----------|------------|------------------|---------------------|-----------------|-------------|
 | 0 baseline | 2026-05-27 | `RM_fd6nQgmSn6UF` | 64 min | 2,18 GB (34,1 MB/min) | 1,55 GB (24,2 MB/min) | — | — | — | Cloud; código default; 1:1 |
-| 1 publish-h360 | | `RM_sZcrpj3cuFEB` | | | | | | | Só paciente; métricas Cloud pendentes |
+| 1 publish-h360 | 2026-05-27 | `RM_sZcrpj3cuFEB` | 6 min | 107,48 MB (17,9 MB/min) | 65,09 MB (10,9 MB/min) | **−48%** | **−55%** | — | Só paciente h360; baseline 64 min |
 | 2 publish-h360-both | | `RM_ZJWhAreMYCDi` | | | | | | | Paciente + web; métricas Cloud pendentes |
 | 3 dynacast | | `RM_wLVgDapJvXcj` | | | | | | | h360 + dynacast; métricas Cloud pendentes |
 | 4 adaptive-stream | | | | | | | | |
