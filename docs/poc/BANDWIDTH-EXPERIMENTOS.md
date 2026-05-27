@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 7 implementado (`quality-low-remote` no paciente) · aguardando medição |
+| **Status** | Exp 7 em medição · room `RM_abQHGntFmSX5` |
 
 ---
 
@@ -131,6 +131,18 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
 *(Acumula Exps 1–5 no código atual.)*
 
+### Resultado registrado — Exp 7 (em andamento)
+
+**Room LiveKit:** `RM_abQHGntFmSX5` · **mudança:** `setVideoQuality(VideoQuality.LOW)` no vídeo remoto da câmera — **só** `mobile-paciente` (`[sessionId].tsx`).
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 |
+|---------|-------|---------------------------|------------|
+| Duração | *pendente* | — | — |
+| Upstream | *pendente* | — | — |
+| Downstream | *pendente* | — | — |
+
+*(Acumula Exps 1–6 no código atual.)*
+
 ---
 
 ## Ordem dos experimentos (atômicos)
@@ -180,7 +192,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 4 adaptive-stream | 2026-05-27 | `RM_k7a7wThdTnmV` | 7 min | 41,48 MB (5,9 MB/min) | 26,76 MB (3,8 MB/min) | **−83%** | **−84%** | — | + adaptiveStream (VideoView no RN) |
 | 5 videotrack | | `RM_hV3F964heLmn` | | | | | | | RN VideoTrack + trackRef; métricas pendentes |
 | 6 adaptive-ui | 2026-05-27 | `RM_q3wYiMAJstVF` | | | | | | | PiP + web `object-fit: contain`; métricas pendentes |
-| 7 quality-low-remote | | | | | | | | | `setVideoQuality(LOW)` no vídeo remoto; só mobile-paciente |
+| 7 quality-low-remote | 2026-05-27 | `RM_abQHGntFmSX5` | | | | | | | LOW no remoto; só mobile; métricas pendentes |
 | 8 audio-red-off | | | | | | | | |
 | 9 profile-orchestrator | | | | | | | | |
 
