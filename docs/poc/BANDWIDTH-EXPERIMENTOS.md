@@ -80,6 +80,19 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
 **Leitura:** queda forte no tráfego da room mesmo com web ainda em resolução alta — coerente com ↓ uplink do paciente e ↓ downlink no médico (vídeo remoto do paciente). Duração diferente do baseline (6 vs 64 min); comparação via **MB/min**.
 
+### Resultado registrado — Exp 2 (2026-05-27)
+
+**Room LiveKit:** `RM_ZJWhAreMYCDi` · **mudança:** h360 no paciente **e** no web.
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) |
+|---------|-------|---------------------------|---------------------|
+| Duração | **6 min** | — | — |
+| Upstream | **49,2 MB** | ~8,2 MB/min | **−76%** (34,1 → 8,2) |
+| Downstream | **32,57 MB** | ~5,4 MB/min | **−78%** (24,2 → 5,4) |
+| **Total** | **81,77 MB** | ~13,6 MB/min | **−77%** (58,3 → 13,6) |
+
+**Leitura:** vs Exp 1 (17,9 / 10,9 MB/min), caiu mais **−54% up** e **−50% down** — coerente com o médico também publicando em h360. Melhor custo/benefício até aqui para 1:1.
+
 ---
 
 ## Ordem dos experimentos (atômicos)
@@ -124,7 +137,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 |-----|------|--------------|---------|----------|------------|------------------|---------------------|-----------------|-------------|
 | 0 baseline | 2026-05-27 | `RM_fd6nQgmSn6UF` | 64 min | 2,18 GB (34,1 MB/min) | 1,55 GB (24,2 MB/min) | — | — | — | Cloud; código default; 1:1 |
 | 1 publish-h360 | 2026-05-27 | `RM_sZcrpj3cuFEB` | 6 min | 107,48 MB (17,9 MB/min) | 65,09 MB (10,9 MB/min) | **−48%** | **−55%** | — | Só paciente h360; baseline 64 min |
-| 2 publish-h360-both | | `RM_ZJWhAreMYCDi` | | | | | | | Paciente + web; métricas Cloud pendentes |
+| 2 publish-h360-both | 2026-05-27 | `RM_ZJWhAreMYCDi` | 6 min | 49,2 MB (8,2 MB/min) | 32,57 MB (5,4 MB/min) | **−76%** | **−78%** | — | h360 paciente + web |
 | 3 dynacast | | `RM_wLVgDapJvXcj` | | | | | | | h360 + dynacast; métricas Cloud pendentes |
 | 4 adaptive-stream | | `RM_k7a7wThdTnmV` | | | | | | | h360 + dynacast + adaptiveStream; métricas pendentes |
 | 5 videotrack | | `RM_hV3F964heLmn` | | | | | | | RN VideoTrack + trackRef; métricas pendentes |
