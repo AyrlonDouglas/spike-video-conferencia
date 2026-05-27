@@ -132,17 +132,18 @@ Fonte: **LiveKit Cloud** (métricas da room, 1:1 paciente + médico).
 
 **Leitura:** vs Exp 4 (5,9 / 3,8 MB/min): **+36% up**, **+34% down** (MB/min) — na mesma ordem de grandeza que Exp 2–3; **sem ganho adicional** mensurável ao trocar `VideoView` por `VideoTrack` com remoto ainda em tela cheia. Coerente com adaptive stream no RN precisar de preview pequeno (Exp 6) para efeito claro.
 
-### Resultado registrado — Exp 6 (em andamento)
+### Resultado registrado — Exp 6 (2026-05-27)
 
 **Room LiveKit:** `RM_q3wYiMAJstVF` · **mudança:** layout PiP (remoto fullscreen + local pequeno) paciente + web; web com `object-fit: contain` no vídeo remoto (quadro vertical inteiro).
 
-| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 |
-|---------|-------|---------------------------|------------|
-| Duração | *pendente* | — | — |
-| Upstream | *pendente* | — | — |
-| Downstream | *pendente* | — | — |
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) |
+|---------|-------|---------------------------|---------------------|
+| Duração | **8 min** | — | — |
+| Upstream | **66,2 MB** | ~8,3 MB/min | **−76%** (34,1 → 8,3) |
+| Downstream | **45,34 MB** | ~5,7 MB/min | **−77%** (24,2 → 5,7) |
+| **Total** | **111,54 MB** | ~13,9 MB/min | **−76%** (58,3 → 13,9) |
 
-*(Acumula Exps 1–5 no código atual.)*
+**Leitura:** vs Exp 5 (8,0 / 5,1 MB/min): **+4% up**, **+12% down** — PiP + `contain` **sem ganho mensurável** na room (variação de sessão). vs Exp 4 (5,9 / 3,8): **+41% up**, **+50% down** — pior que o menor da série; remoto segue fullscreen nos dois lados, então adaptive stream no preview local pequeno não apareceu no agregado Cloud. Duração 8 min vs 6–7 min nos outros — comparar por MB/min.
 
 ### Resultado registrado — Exp 7 (em andamento)
 
@@ -216,7 +217,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 3 dynacast | 2026-05-27 | `RM_wLVgDapJvXcj` | 6 min | 52,6 MB (8,8 MB/min) | 38,99 MB (6,5 MB/min) | **−74%** | **−73%** | — | h360 + dynacast; ~Exp 2 |
 | 4 adaptive-stream | 2026-05-27 | `RM_k7a7wThdTnmV` | 7 min | 41,48 MB (5,9 MB/min) | 26,76 MB (3,8 MB/min) | **−83%** | **−84%** | — | + adaptiveStream (VideoView no RN) |
 | 5 videotrack | 2026-05-27 | `RM_hV3F964heLmn` | 6 min | 47,92 MB (8,0 MB/min) | 30,74 MB (5,1 MB/min) | **−77%** | **−79%** | — | VideoTrack no RN; ~Exp 2–4 |
-| 6 adaptive-ui | 2026-05-27 | `RM_q3wYiMAJstVF` | | | | | | | PiP + web `object-fit: contain`; métricas pendentes |
+| 6 adaptive-ui | 2026-05-27 | `RM_q3wYiMAJstVF` | 8 min | 66,2 MB (8,3 MB/min) | 45,34 MB (5,7 MB/min) | **−76%** | **−77%** | — | PiP + contain; ~Exp 5 |
 | 7 quality-low-remote | 2026-05-27 | `RM_abQHGntFmSX5` | | | | | | | LOW no remoto; só mobile; métricas pendentes |
 | 8 audio-red-off | 2026-05-27 | `RM_FwLENn43zHZL` | | | | | | | `red: false` no áudio; só mobile; métricas pendentes |
 | 9 profile-orchestrator | | | | | | | | |
