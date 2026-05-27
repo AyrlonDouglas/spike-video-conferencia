@@ -5,7 +5,7 @@
 | **Objetivo** | Medir o ganho de cada ajuste de forma **atômica** (uma mudança por vez) |
 | **Cenário** | Videoconsulta 1:1 — `mobile-paciente` + `web-profissional` |
 | **Baseline** | `new Room()` sem opções · `VideoView` · defaults de publicação |
-| **Status** | Exp 3 implementado (`dynacast` + h360 em ambos) · aguardando medição |
+| **Status** | Exp 4 implementado (`adaptiveStream` + dynacast + h360) · aguardando medição |
 
 ---
 
@@ -126,7 +126,7 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 1 publish-h360 | 2026-05-27 | `RM_sZcrpj3cuFEB` | 6 min | 107,48 MB (17,9 MB/min) | 65,09 MB (10,9 MB/min) | **−48%** | **−55%** | — | Só paciente h360; baseline 64 min |
 | 2 publish-h360-both | | `RM_ZJWhAreMYCDi` | | | | | | | Paciente + web; métricas Cloud pendentes |
 | 3 dynacast | | `RM_wLVgDapJvXcj` | | | | | | | h360 + dynacast; métricas Cloud pendentes |
-| 4 adaptive-stream | | | | | | | | |
+| 4 adaptive-stream | | `RM_k7a7wThdTnmV` | | | | | | | h360 + dynacast + adaptiveStream; métricas pendentes |
 | 5 videotrack | | | | | | | | |
 | 6 adaptive-ui | | | | | | | | |
 | 7 quality-low-remote | | | | | | | | |
@@ -159,11 +159,18 @@ new Room({
 });
 ```
 
-### Exp 4 — adaptive stream
+### Exp 4 — adaptive stream (acumula Exps 1–3)
 
 ```typescript
-new Room({ adaptiveStream: true, dynacast: true }); // dynacast só se Exp 3 já validado
+new Room({
+  adaptiveStream: true,
+  dynacast: true,
+  videoCaptureDefaults: { resolution: VideoPresets.h360.resolution },
+  publishDefaults: { videoEncoding: VideoPresets.h360.encoding },
+});
 ```
+
+Web: `track.attach()` em `<video>` já usado em `consulta.component.ts` — adaptive stream deve atuar. RN: efeito limitado até Exp 5 (`VideoTrack`).
 
 ### Exp 7 — qualidade máxima baixa no remoto
 
