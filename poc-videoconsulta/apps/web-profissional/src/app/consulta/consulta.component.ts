@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { RemoteTrackPublication, Room, RoomEvent, Track } from 'livekit-client';
+import { RemoteTrackPublication, Room, RoomEvent, Track, VideoQuality } from 'livekit-client';
 import type { SessionSnapshot } from '../session.types';
 import {
   connectRoomWithLocalMedia,
@@ -219,6 +219,9 @@ export class ConsultaComponent implements AfterViewInit, OnDestroy {
 
   private attachRemoteTrack(publication: RemoteTrackPublication): void {
     if (publication.kind === Track.Kind.Video && this.remoteVideoRef) {
+      if (publication.source === Track.Source.Camera) {
+        publication.setVideoQuality(VideoQuality.MEDIUM);
+      }
       publication.videoTrack?.attach(this.remoteVideoRef.nativeElement);
       this.hasRemoteVideo.set(true);
       return;

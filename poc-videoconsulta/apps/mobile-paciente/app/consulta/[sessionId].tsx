@@ -45,7 +45,7 @@ function isCameraVideoPublication(publication: {
   return publication.kind === Track.Kind.Video && publication.source === Track.Source.Camera;
 }
 
-/** Exp 12 — qualidade média no vídeo remoto (só paciente); acumula Exp 10 (h540). */
+/** Exp 13 — qualidade média no vídeo remoto (paciente + web); acumula Exp 10 (h540). */
 function applyRemoteVideoQualityMedium(publication: TrackPublication): void {
   if (!isCameraVideoPublication(publication)) return;
   (publication as RemoteTrackPublication).setVideoQuality(VideoQuality.MEDIUM);
