@@ -45,10 +45,10 @@ function isCameraVideoPublication(publication: {
   return publication.kind === Track.Kind.Video && publication.source === Track.Source.Camera;
 }
 
-/** Exp 7 — qualidade baixa no vídeo remoto (só paciente). */
-function applyRemoteVideoQualityLow(publication: TrackPublication): void {
+/** Exp 12 — qualidade média no vídeo remoto (só paciente); acumula Exp 10 (h540). */
+function applyRemoteVideoQualityMedium(publication: TrackPublication): void {
   if (!isCameraVideoPublication(publication)) return;
-  (publication as RemoteTrackPublication).setVideoQuality(VideoQuality.LOW);
+  (publication as RemoteTrackPublication).setVideoQuality(VideoQuality.MEDIUM);
 }
 
 function cameraTrackRef(
@@ -152,7 +152,7 @@ export default function ConsultaPacienteScreen() {
     };
 
     const addRemoteVideoRef = (participant: RemoteParticipant, publication: TrackPublication) => {
-      applyRemoteVideoQualityLow(publication);
+      applyRemoteVideoQualityMedium(publication);
       const ref = cameraTrackRef(participant, publication);
       if (!ref) return;
       const sid = publication.trackSid;

@@ -229,8 +229,11 @@ Calcule também **Δ vs Exp 0** na tabela para manter histórico.
 |---|-----|---------|-----|--------------|-------------|
 | 10 | `publish-h540-both` | `CONSULTA_VIDEO_PRESET = VideoPresets.h540` | Paciente + web | `livekit-room.ts` nos dois apps | MB/min vs h360+stack; **qualidade subjetiva** |
 | 11 | `publish-h540-patient` *(opcional)* | h540 só no paciente; web mantém h360 | Só mobile | preset h540 no mobile, h360 no web | Isolar custo do uplink do paciente |
+| 12 | `quality-medium-remote-h540` | `setVideoQuality(MEDIUM)` no vídeo remoto | Só paciente | `[sessionId].tsx` mobile | MB/min vs Exp 10; qualidade subjetiva |
+| 13 | `quality-medium-both-h540` | `setVideoQuality(MEDIUM)` no remoto | **Paciente + web** | `[sessionId].tsx` + `consulta.component.ts` | MB/min vs Exp 12; qualidade simétrica |
+| 14 | `quality-high-both-h540` | `setVideoQuality(HIGH)` no remoto | **Paciente + web** | `[sessionId].tsx` + `consulta.component.ts` | MB/min vs Exp 13; teto h540 no downlink |
 
-**Regra:** um Exp = um preset (10 ou 11). Manter **6–8 min**, mesma rede e roteiro. Preencher coluna **Qualidade (1–5)**:
+**Regra:** um Exp = uma mudança de assinatura (12–14) ou preset (10–11). Manter **6–8 min**, mesma rede e roteiro. Preencher coluna **Qualidade (1–5)**:
 
 - Vídeo que o **médico** vê (paciente)
 - Vídeo que o **paciente** vê (médico)
@@ -243,7 +246,43 @@ Calcule também **Δ vs Exp 0** na tabela para manter histórico.
 2. Em `mobile-paciente` e `web-profissional`, trocar `CONSULTA_VIDEO_PRESET` para `VideoPresets.h540` (Exp 10) ou só no mobile (Exp 11).
 3. Rebuild/reload dos dois apps; **nova** room LiveKit.
 4. Consulta 6–8 min; anotar Cloud + qualidade subjetiva.
-5. Reverter preset para `h360` antes do próximo Exp ou commit.
+5. Reverter preset/qualidade antes do próximo Exp ou commit.
+
+### Como rodar Exps 12–14 (h540 + assinatura)
+
+**Base comum:** `VideoPresets.h540` em `livekit-room.ts` (paciente + web).
+
+| Exp | Mobile (`[sessionId].tsx`) | Web (`consulta.component.ts`) | O que isola |
+|-----|----------------------------|-------------------------------|-------------|
+| **12** | `setVideoQuality(MEDIUM)` no `TrackSubscribed` | sem chamada | MEDIUM só no paciente |
+| **13** | `setVideoQuality(MEDIUM)` | `setVideoQuality(MEDIUM)` em `attachRemoteTrack` | MEDIUM simétrico |
+| **14** | `setVideoQuality(HIGH)` | `setVideoQuality(HIGH)` em `attachRemoteTrack` | teto simulcast (~h540) nos dois |
+
+**Mobile** — no handler de vídeo remoto (já existe no Exp 12):
+
+```typescript
+(publication as RemoteTrackPublication).setVideoQuality(VideoQuality.MEDIUM); // Exp 13
+// (publication as RemoteTrackPublication).setVideoQuality(VideoQuality.HIGH);  // Exp 14
+```
+
+**Web** — em `attachRemoteTrack`, antes de `attach`, só para câmera remota:
+
+```typescript
+import { Track, VideoQuality } from 'livekit-client';
+
+// Exp 13:
+if (publication.kind === Track.Kind.Video && publication.source === Track.Source.Camera) {
+  publication.setVideoQuality(VideoQuality.MEDIUM);
+}
+// Exp 14: trocar por VideoQuality.HIGH
+```
+
+**Roteiro por Exp:** aplicar snippet(s) → rebuild/reload → nova room → 6–8 min → Cloud + qualidade subjetiva → anotar na §4 → reverter antes do próximo Exp.
+
+**Leitura esperada:**
+
+- **Exp 13 vs 12:** ↑ downstream agregado (web também capado em MEDIUM); qualidade do paciente **no médico** deve aproximar-se do que o paciente vê.
+- **Exp 14 vs 13:** ↑ downstream; qualidade máxima simétrica (~540p); room total mais cara — comparar se vale vs h360+stack (Exp 2).
 
 ### Snippet — Exp 10 (h540 nos dois lados)
 
@@ -262,6 +301,46 @@ export const CONSULTA_VIDEO_PRESET = VideoPresets.h540;
 ```
 
 **Leitura esperada:** h540 ≈ **2× bitrate** alvo vs h360 → room total pode subir ~30–80% (MB/min), dependendo de simulcast/SFU. Se qualidade subjetiva não melhorar de forma clara, manter **h360** no MVP.
+
+### Resultado registrado — Exp 10 (2026-05-27)
+
+**Room LiveKit:** `RM_zA5C9cjG9HYR` · **mudança:** `CONSULTA_VIDEO_PRESET = VideoPresets.h540` no paciente **e** no web (stack Exps 3–8).
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) | Δ vs h360+stack (Exp 2) |
+|---------|-------|---------------------------|---------------------|---------------------------|
+| Duração | **6 min** | — | — | — |
+| Upstream | **83,21 MB** | ~13,9 MB/min | **−59%** (34,1 → 13,9) | **+70%** (8,2 → 13,9) |
+| Downstream | **27,92 MB** | ~4,7 MB/min | **−81%** (24,2 → 4,7) | **−13%** (5,4 → 4,7) |
+| **Total** | **111,13 MB** | ~18,5 MB/min | **−68%** (58,3 → 18,5) | **+36%** (13,6 → 18,5) |
+
+**Leitura:** vs Exp 2 (h360 nos dois lados): **+70% upstream** — coerente com bitrate alvo ~2× do h540; **−13% downstream** (variação de sessão ou efeito do stack, ex. `setVideoQuality(LOW)` no paciente). Room total **+36%** vs h360+stack (18,5 vs 13,6 MB/min). Ainda **−68%** vs baseline Exp 0. Qualidade subjetiva *(pendente)* — anotar se o ganho visual compensa o custo extra.
+
+**Qualidade subjetiva:** *(pendente)* — vídeo médico→paciente, paciente→médico, áudio, travamentos.
+
+### Resultado registrado — Exp 12 (2026-05-27)
+
+**Room LiveKit:** `RM_rACxcmtEShGm` · **mudança:** h540 paciente + web; `setVideoQuality(MEDIUM)` no remoto — **só** mobile.
+
+| Métrica | Valor | Normalizado (por minuto) | Δ vs Exp 0 (MB/min) | Δ vs Exp 10 |
+|---------|-------|---------------------------|---------------------|-------------|
+| Duração | *(pendente)* | — | — | — |
+| Upstream | *(pendente)* | | | |
+| Downstream | *(pendente)* | | | |
+| **Total** | *(pendente)* | | | |
+
+**Qualidade subjetiva:** *(pendente)* — vídeo médico→paciente, paciente→médico, áudio, travamentos.
+
+### Exp 13 — `quality-medium-both-h540` *(doc only — aplicar na hora do teste)*
+
+**Base:** h540 nos dois. **Mudança:** `setVideoQuality(MEDIUM)` no remoto em **mobile e web** (ver snippets acima).
+
+**Comparar com:** Exp 12 — espera-se ↑ downstream total e qualidade simétrica.
+
+### Exp 14 — `quality-high-both-h540` *(doc only — aplicar na hora do teste)*
+
+**Base:** h540 nos dois. **Mudança:** `setVideoQuality(HIGH)` no remoto em **mobile e web**.
+
+**Comparar com:** Exp 13 — teto ~h540 nos dois lados; referência de qualidade máxima na Fase 2.
 
 ---
 
@@ -294,8 +373,11 @@ Preencha após cada experimento. Δ = comparado ao **Exp 0** (baseline).
 | 7 quality-low-remote | 2026-05-27 | `RM_abQHGntFmSX5` | 7 min | 52,58 MB (7,5 MB/min) | 21,67 MB (3,1 MB/min) | **−78%** | **−87%** | — | LOW no remoto; só mobile; ↓ down claro |
 | 8 audio-red-off | 2026-05-27 | `RM_FwLENn43zHZL` | 8 min | 65,29 MB (8,2 MB/min) | 31,42 MB (3,9 MB/min) | **−76%** | **−84%** | — | `red: false` só mobile; ~Exp 5–6; sem ↓ vs Exp 7 |
 | 9 profile-orchestrator | | | | | | | | |
-| 10 publish-h540-both | | | | | | | | | h540 paciente + web; stack Exps 3–8; Fase 2 |
+| 10 publish-h540-both | 2026-05-27 | `RM_zA5C9cjG9HYR` | 6 min | 83,21 MB (13,9 MB/min) | 27,92 MB (4,7 MB/min) | **−59%** | **−81%** | — | h540 ambos; +70% up vs Exp 2; Fase 2 |
 | 11 publish-h540-patient | | | | | | | | | h540 só paciente *(opcional)*; Fase 2 |
+| 12 quality-medium-remote-h540 | 2026-05-27 | `RM_rACxcmtEShGm` | | | | | | | MEDIUM remoto; só mobile; h540 |
+| 13 quality-medium-both-h540 | | | | | | | | | MEDIUM remoto; paciente + web; h540 |
+| 14 quality-high-both-h540 | | | | | | | | | HIGH remoto; paciente + web; h540 |
 
 **Como calcular Δ (Fase 2):** além do Exp 0, anotar Δ vs **h360+stack** (~8,2 / ~5,4 MB/min da Exp 2 ou média Exps 5–6).
 
@@ -352,11 +434,13 @@ Trocar `VideoView` por `VideoTrack` com `trackRef` (`@livekit/components-react`)
 ```typescript
 import { Track, VideoQuality } from 'livekit-client';
 
-// No TrackSubscribed, se vídeo remoto:
-if (track.kind === Track.Kind.Video) {
-  publication.setVideoQuality(VideoQuality.LOW);
-}
+// No TrackSubscribed, se vídeo remoto da câmera:
+(publication as RemoteTrackPublication).setVideoQuality(VideoQuality.LOW);
 ```
+
+### Exp 12–14 — assinatura remota (h540 + stack)
+
+Ver § Fase 2 → **Como rodar Exps 12–14**.
 
 ### Exp 8 — Audio RED desligado (só paciente, acumula Exps 1–7)
 

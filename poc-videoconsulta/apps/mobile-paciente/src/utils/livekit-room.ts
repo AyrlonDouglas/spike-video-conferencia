@@ -9,16 +9,16 @@ import {
 /** Exp 8 — Audio RED desligado ao publicar áudio (só paciente). */
 export const AUDIO_PUBLISH_OPTIONS: TrackPublishOptions = { red: false };
 
-/** Exps 1–8 (bandwidth) — ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
+/** Exp 10 — h540 nos dois lados; ver docs/poc/BANDWIDTH-EXPERIMENTOS.md */
 export function createConsultaRoom(): Room {
   return new Room({
     adaptiveStream: true,
     dynacast: true,
     videoCaptureDefaults: {
-      resolution: VideoPresets.h360.resolution,
+      resolution: VideoPresets.h540.resolution,
     },
     publishDefaults: {
-      videoEncoding: VideoPresets.h360.encoding,
+      videoEncoding: VideoPresets.h540.encoding,
       red: false,
     },
   });
